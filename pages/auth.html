@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matcha - Auth</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            background: white;
+            padding: 2rem;
+            max-width: 400px;
+            margin: 2rem auto;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        input {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+        button {
+            width: 100%;
+            padding: 0.5rem;
+            font-size: 1rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .toggle {
+            text-align: center;
+            margin-top: 1rem;
+        }
+        .toggle a {
+            color: #007BFF;
+            cursor: pointer;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Matcha - Auth</h1>
+
+    <!-- Login Form -->
+    <form id="login-form" action="/auth/login" method="POST">
+        <h2>Connexion</h2>
+        <input type="email" name="email" placeholder="Email" required />
+        <input type="password" name="password" placeholder="Mot de passe" required />
+        <button type="submit">Se connecter</button>
+        <div class="toggle">
+            Pas encore inscrit ? <a onclick="toggleForms()">Créer un compte</a>
+        </div>
+    </form>
+
+    <!-- Register Form -->
+    <form id="register-form" action="/auth/register" method="POST" style="display:none;">
+        <h2>Inscription</h2>
+        <input type="text" name="username" placeholder="Nom d'utilisateur" required />
+        <input type="email" name="email" placeholder="Email" required />
+        <input type="password" name="password" placeholder="Mot de passe" required />
+        <button type="submit">S'inscrire</button>
+        <div class="toggle">
+            Déjà inscrit ? <a onclick="toggleForms()">Se connecter</a>
+        </div>
+    </form>
+
+    <script>
+        function toggleForms() {
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            if (loginForm.style.display === 'none') {
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'none';
+            } else {
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'block';
+            }
+        }
+    </script>
+
+</body>
+</html>

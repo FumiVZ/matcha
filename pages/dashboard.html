@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 3rem auto;
+            padding: 2rem;
+            background-color: #f5f5f5;
+        }
+        .dashboard {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 1.5rem;
+        }
+        .info {
+            margin: 1rem 0;
+            padding: 1rem;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+        .logout-button {
+            margin-top: 2rem;
+            padding: 0.7rem 1.5rem;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .logout-button:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <h1>Dashboard</h1>
+        
+        <div class="info">
+            <strong>User ID:</strong> <%= userId %>
+        </div>
+        
+        <div class="info">
+            <strong>Email:</strong> <%= email %>
+        </div>
+
+        <form action="/auth/logout" method="POST">
+            <button type="submit" class="logout-button">Se Déconnecter</button>
+        </form>
+    </div>
+</body>
+</html>

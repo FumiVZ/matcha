@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Node Server - Contact</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 2rem auto;
+      line-height: 1.6;
+      background-color: #e8f0fe;
+      padding: 2rem;
+    }
+    header, footer {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    nav a {
+      margin: 0 1rem;
+      text-decoration: none;
+      color: #0077cc;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      max-width: 400px;
+      margin: auto;
+    }
+    input, textarea {
+      margin-bottom: 1rem;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    button {
+      padding: 0.5rem;
+      font-size: 1rem;
+      background-color: #0077cc;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
+    .auth-button {
+      display: inline-block;
+      margin: 1rem 0;
+      padding: 0.7rem 1.5rem;
+      background-color: #4CAF50;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+    .auth-button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Contact Me</h1>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+    </nav>
+    <div style="text-align: center;">
+      <a href="/auth" class="auth-button">Login / Sign Up</a>
+    </div>
+  </header>
+
+  <main>
+    <h2>Contact Page</h2>
+    <p>
+      Fill out the form below to practice sending data to the server.
+    </p>
+    <form action="/contact" method="POST">
+      <input type="text" name="name" placeholder="Your Name" required>
+      <i
