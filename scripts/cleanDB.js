@@ -2,7 +2,7 @@ const pool = require('../config/db');
 
 (async () => {
     try {
-        await pool.query('DROP TABLE IF EXISTS users;');
+        await pool.query('DROP TABLE IF EXISTS users CASCADE;');
         console.log('Table users dropped!');
     } catch (err) {
         console.error(err);

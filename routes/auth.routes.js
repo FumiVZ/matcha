@@ -26,14 +26,24 @@ router.post('/register', async (req, res) => {
     const { email, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const result = await pool.query(
-        'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id',
-        [email, hashedPassword]
-    );
+    try {
+        const result = await pool.query(
+            'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id',
+            [email, hashedPassword]
+        );
 
-    req.session.userId = result.rows[0].id;
-    req.session.email = email;
-    res.redirect('/dashboard');
+        req.session.userId = result.rows[0].id;
+        req.session.email = email;
+        
+        // Redirect to profile setup instead of dashboard
+        res.redirect('/profile/setup');
+    } catch (error) {
+        if (error.code === '23505') { // Unique violation
+            return res.status(400).send('Email already registered');
+        }
+        console.error('Registration error:', error);
+        res.status(500).send('Error during registration');
+    }
 });
 
 // POST /auth/logout

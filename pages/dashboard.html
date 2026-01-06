@@ -1,35 +1,180 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>Dashboard - Matcha</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 3rem auto;
-            padding: 2rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1rem;
             background-color: #f5f5f5;
         }
+        
         .dashboard {
             background: white;
             padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        
         h1 {
             color: #333;
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.5rem;
         }
-        .info {
-            margin: 1rem 0;
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        
+        .profile-section {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .profile-photo-container {
+            flex-shrink: 0;
+        }
+        
+        .profile-photo {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #4CAF50;
+        }
+        
+        .profile-photo-placeholder {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background-color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 3rem;
+        }
+        
+        .profile-info {
+            flex-grow: 1;
+        }
+        
+        .profile-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .profile-email {
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        
+        .profile-details {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.5rem 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .detail-label {
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .detail-value {
+            color: #333;
+        }
+        
+        .biography-section {
+            margin-bottom: 2rem;
             padding: 1rem;
-            background-color: #f0f0f0;
-            border-radius: 5px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
         }
-        .logout-button {
+        
+        .biography-section h2 {
+            font-size: 1rem;
+            color: #555;
+            margin-bottom: 0.5rem;
+        }
+        
+        .biography-text {
+            color: #333;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        
+        .tags-section {
+            margin-bottom: 2rem;
+        }
+        
+        .tags-section h2 {
+            font-size: 1rem;
+            color: #555;
+            margin-bottom: 0.75rem;
+        }
+        
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        
+        .tag::before {
+            content: '#';
+            opacity: 0.7;
+        }
+        
+        .no-tags {
+            color: #999;
+            font-style: italic;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 1rem;
             margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #eee;
+        }
+        
+        .edit-button {
+            padding: 0.7rem 1.5rem;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            text-decoration: none;
+        }
+        
+        .edit-button:hover {
+            background-color: #1976D2;
+        }
+        
+        .logout-button {
             padding: 0.7rem 1.5rem;
             background-color: #f44336;
             color: white;
@@ -38,26 +183,110 @@
             cursor: pointer;
             font-size: 1rem;
         }
+        
         .logout-button:hover {
             background-color: #d32f2f;
+        }
+        
+        @media (max-width: 600px) {
+            .profile-section {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            
+            .profile-details {
+                justify-content: center;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+            
+            .actions button, .actions a {
+                width: 100%;
+                text-align: center;
+            }
         }
     </style>
 </head>
 <body>
     <div class="dashboard">
-        <h1>Dashboard</h1>
+        <h1>My Profile</h1>
+        <p class="subtitle">Welcome to your dashboard!</p>
         
-        <div class="info">
-            <strong>User ID:</strong> <%= userId %>
+        <div class="profile-section">
+            <div class="profile-photo-container">
+                <div id="photoContainer"></div>
+            </div>
+            
+            <div class="profile-info">
+                <div class="profile-name" id="profileName"></div>
+                <div class="profile-email"><%= email %></div>
+                
+                <div class="profile-details">
+                    <span class="detail-label">Gender:</span>
+                    <span class="detail-value" id="genderValue"></span>
+                    
+                    <span class="detail-label">Interested in:</span>
+                    <span class="detail-value" id="preferenceValue"></span>
+                </div>
+            </div>
         </div>
         
-        <div class="info">
-            <strong>Email:</strong> <%= email %>
+        <div class="biography-section">
+            <h2>About Me</h2>
+            <p class="biography-text"><%= biography %></p>
         </div>
-
-        <form action="/auth/logout" method="POST">
-            <button type="submit" class="logout-button">Se Déconnecter</button>
-        </form>
+        
+        <div class="tags-section">
+            <h2>My Interests</h2>
+            <div class="tags-container" id="tagsContainer"></div>
+        </div>
+        
+        <div class="actions">
+            <form action="/auth/logout" method="POST" style="margin: 0;">
+                <button type="submit" class="logout-button">Logout</button>
+            </form>
+        </div>
     </div>
+    
+    <script>
+        // Profile data from server
+        const profilePhoto = '<%= profilePhoto %>';
+        const gender = '<%= gender %>';
+        const sexualPreference = '<%= sexualPreference %>';
+        const tags = <%= tags %>;
+        
+        // Display profile photo or placeholder
+        const photoContainer = document.getElementById('photoContainer');
+        if (profilePhoto) {
+            photoContainer.innerHTML = `<img src="${profilePhoto}" alt="Profile Photo" class="profile-photo">`;
+        } else {
+            photoContainer.innerHTML = '<div class="profile-photo-placeholder">?</div>';
+        }
+        
+        // Display name (use email as fallback since no first/last name in DB)
+        const profileName = document.getElementById('profileName');
+        profileName.textContent = 'User #<%= userId %>';
+        
+        // Format and display gender
+        const genderValue = document.getElementById('genderValue');
+        const genderMap = { 'male': 'Male', 'female': 'Female', 'other': 'Other' };
+        genderValue.textContent = genderMap[gender] || gender || 'Not specified';
+        
+        // Format and display preference
+        const preferenceValue = document.getElementById('preferenceValue');
+        const prefMap = { 'male': 'Men', 'female': 'Women', 'both': 'Both' };
+        preferenceValue.textContent = prefMap[sexualPreference] || sexualPreference || 'Not specified';
+        
+        // Display tags
+        const tagsContainer = document.getElementById('tagsContainer');
+        if (tags && tags.length > 0) {
+            tagsContainer.innerHTML = tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+        } else {
+            tagsContainer.innerHTML = '<span class="no-tags">No interests selected</span>';
+        }
+    </script>
 </body>
 </html>

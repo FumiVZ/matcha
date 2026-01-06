@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Your Profile - Matcha</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1rem;
+            background-color: #f5f5f5;
+        }
+        
+        .profile-setup {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        
+        .form-section {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .form-section:last-of-type {
+            border-bottom: none;
+        }
+        
+        .form-section h2 {
+            color: #444;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .radio-group, .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .radio-label, .checkbox-label {
+            display: flex;
+            align-items: center;
+            padding: 0.7rem 1.2rem;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .radio-label:hover, .checkbox-label:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .radio-label input, .checkbox-label input {
+            margin-right: 0.5rem;
+        }
+        
+        .radio-label input:checked + span,
+        .checkbox-label input:checked + span {
+            font-weight: bold;
+        }
+        
+        .radio-label:has(input:checked),
+        .checkbox-label:has(input:checked) {
+            background-color: #e3f2fd;
+            border: 2px solid #2196F3;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+        
+        .tag-label {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background-color: #f0f0f0;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        
+        .tag-label:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .tag-label input {
+            display: none;
+        }
+        
+        .tag-label:has(input:checked) {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .tag-text::before {
+            content: '#';
+            opacity: 0.7;
+        }
+        
+        .photos-section {
+            margin-bottom: 1rem;
+        }
+        
+        .photo-upload-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .photo-input-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .photo-preview {
+            width: 120px;
+            height: 120px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background-color: #fafafa;
+        }
+        
+        .photo-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+        }
+        
+        .photo-preview.has-image {
+            border-style: solid;
+            border-color: #4CAF50;
+        }
+        
+        .profile-photo-radio {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.85rem;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .upload-btn {
+            padding: 0.4rem 0.8rem;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        
+        .upload-btn:hover {
+            background-color: #1976D2;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+        
+        .submit-btn:hover {
+            background-color: #43A047;
+        }
+        
+        .info-text {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        
+        .required {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="profile-setup">
+        <h1>Complete Your Profile</h1>
+        <p class="subtitle">Welcome <%= email %>! Tell us about yourself to find your perfect match.</p>
+        
+        <form action="/profile/setup" method="POST" enctype="multipart/form-data" id="profileForm">
+            
+            <!-- Gender Section -->
+            <div class="form-section">
+                <h2>Your Gender <span class="required">*</span></h2>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="gender" value="male" required>
+                        <span>Male</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="gender" value="female" required>
+                        <span>Female</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="gender" value="other" required>
+                        <span>Other</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Sexual Preference Section -->
+            <div class="form-section">
+                <h2>Interested In <span class="required">*</span></h2>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="sexual_preference" value="male" required>
+                        <span>Men</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="sexual_preference" value="female" required>
+                        <span>Women</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="sexual_preference" value="both" required>
+                        <span>Both</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Biography Section -->
+            <div class="form-section">
+                <h2>About You <span class="required">*</span></h2>
+                <p class="info-text">Write a short bio to let others know who you are.</p>
+                <textarea name="biography" placeholder="Tell us about yourself, your hobbies, what you're looking for..." required></textarea>
+            </div>
+            
+            <!-- Interests/Tags Section -->
+            <div class="form-section">
+                <h2>Your Interests <span class="required">*</span></h2>
+                <p class="info-text">Select at least one tag that describes your interests.</p>
+                <div class="tags-container">
+                    <%= tagsHtml %>
+                </div>
+            </div>
+            
+            <!-- Photos Section -->
+            <div class="form-section">
+                <h2>Your Photos <span class="required">*</span></h2>
+                <p class="info-text">Upload at least one photo (up to 5). Select one as your profile picture.</p>
+                
+                <div class="photo-upload-container" id="photoContainer">
+                    <!-- Photo slots will be generated by JavaScript -->
+                </div>
+                
+                <input type="hidden" name="profile_photo_index" id="profilePhotoIndex" value="0">
+            </div>
+            
+            <button type="submit" class="submit-btn">Complete Profile</button>
+        </form>
+    </div>
+    
+    <script>
+        // Generate 5 photo upload slots
+        const photoContainer = document.getElementById('photoContainer');
+        const profilePhotoIndex = document.getElementById('profilePhotoIndex');
+        
+        for (let i = 0; i < 5; i++) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'photo-input-wrapper';
+            wrapper.innerHTML = `
+                <div class="photo-preview" id="preview${i}">
+                    <span style="color: #999;">Photo ${i + 1}</span>
+                </div>
+                <input type="file" name="photos" class="file-input" id="photo${i}" accept="image/jpeg,image/png" onchange="previewImage(this, ${i})">
+                <button type="button" class="upload-btn" onclick="document.getElementById('photo${i}').click()">Choose</button>
+                <label class="profile-photo-radio">
+                    <input type="radio" name="profile_photo_select" value="${i}" ${i === 0 ? 'checked' : ''} onchange="updateProfilePhotoIndex(${i})">
+                    <span>Profile Photo</span>
+                </label>
+            `;
+            photoContainer.appendChild(wrapper);
+        }
+        
+        function previewImage(input, index) {
+            const preview = document.getElementById('preview' + index);
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Photo ${index + 1}">`;
+                    preview.classList.add('has-image');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        
+        function updateProfilePhotoIndex(index) {
+            profilePhotoIndex.value = index;
+        }
+
+        // Form validation
+        document.getElementById('profileForm').addEventListener('submit', function(e) {
+            // Check if at least one photo is uploaded
+            const photoInputs = document.querySelectorAll('input[name="photos"]');
+            let hasPhoto = false;
+            photoInputs.forEach(input => {
+                if (input.files && input.files.length > 0) {
+                    hasPhoto = true;
+                }
+            });
+            
+            if (!hasPhoto) {
+                e.preventDefault();
+                alert('Please upload at least one photo');
+                return;
+            }
+
+            // Check if at least one tag is selected
+            const tagInputs = document.querySelectorAll('input[name="tags"]:checked');
+            if (tagInputs.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one interest tag');
+                return;
+            }
+        });
+    </script>
+</body>
+</html>
