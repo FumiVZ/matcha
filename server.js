@@ -64,9 +64,8 @@ app.get('/uploads/photos/:filename', isAuthenticated, async (req, res) => {
             return res.status(404).send('Photo not found');
         }
         
-        // Security headers to prevent MIME sniffing and XSS
+        // Security headers to prevent MIME sniffing and XSS (only for images)
         res.set('X-Content-Type-Options', 'nosniff');
-        res.set('Content-Security-Policy', "default-src 'none'");
         res.set('Cache-Control', 'private, max-age=3600');
         
         const filePath = path.join(__dirname, 'uploads', 'photos', filename);
@@ -79,19 +78,24 @@ app.get('/uploads/photos/:filename', isAuthenticated, async (req, res) => {
 
 
 // Middleware pour logger chaque page visitée
+// Middleware pour logger chaque page visitée
 app.use((req, res, next) => {
     logger.emit('pageVisited', req.path);
     next();
 });
 
-// Serve React App
+// Serve static files from React build
 app.use(express.static(path.join(__dirname, 'front/dist')));
 
-// Handle React routing, return all requests to React app
+// Handle React routing - this must be LAST, after all API routes
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'front/dist', 'index.html'));
+    // Only serve index.html for non-API routes
+    if (!req.path.startsWith('/auth') && !req.path.startsWith('/profile') && !req.path.startsWith('/uploads')) {
+        res.sendFile(path.join(__dirname, 'front/dist', 'index.html'));
+    } else {
+        res.status(404).send('API endpoint not found');
+    }
 });
-
 // Lancement du serveur
 app.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}`);

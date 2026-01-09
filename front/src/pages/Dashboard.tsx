@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import '../styles/common.css';
 
 interface User {
     id: number;
@@ -35,30 +36,32 @@ export default function Dashboard() {
             });
     }, []);
 
-    if (loading) return <div>Loading...</div>;
-    if (error) return <div>Error: {error}</div>;
-    if (!data) return <div>No data</div>;
+    if (loading) return <div className="loading">Loading...</div>;
+    if (error) return <div className="error">Error: {error}</div>;
+    if (!data) return <div className="error">No data</div>;
 
     return (
-        <div style={{ padding: '20px' }}>
+        <div className="dashboard-container">
             <h1>Dashboard</h1>
-            <div style={{ border: '1px solid #ccc', padding: '20px', borderRadius: '8px' }}>
+            <div className="profile-card">
                 {data.profilePhoto && (
                     <img 
                         src={data.profilePhoto} 
                         alt="Profile" 
-                        style={{ width: '150px', height: '150px', objectFit: 'cover', borderRadius: '50%' }}
+                        className="profile-photo"
                     />
                 )}
                 <h2>Welcome, {data.user.email}</h2>
-                <p><strong>Bio:</strong> {data.user.biography}</p>
-                <p><strong>Gender:</strong> {data.user.gender}</p>
-                <p><strong>Preference:</strong> {data.user.sexual_preference}</p>
+                <div className="profile-info">
+                    <p><strong>Bio:</strong> {data.user.biography}</p>
+                    <p><strong>Gender:</strong> {data.user.gender}</p>
+                    <p><strong>Preference:</strong> {data.user.sexual_preference}</p>
+                </div>
                 <div>
                     <strong>Tags:</strong>
-                    <ul style={{ display: 'flex', gap: '10px', listStyle: 'none', padding: 0 }}>
+                    <ul className="tags-list">
                         {data.tags.map(tag => (
-                            <li key={tag} style={{ background: '#eee', padding: '5px 10px', borderRadius: '15px' }}>
+                            <li key={tag} className="tag-item">
                                 {tag}
                             </li>
                         ))}
