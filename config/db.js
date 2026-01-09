@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-// Validate required environment variables
+// Validate required environment variables (secrets only)
 const requiredEnvVars = ['DB_PASSWORD'];
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 if (missingVars.length > 0) {

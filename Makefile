@@ -22,12 +22,14 @@ clean-db: docker-db
 
 clean: clean-db
 	@echo "Cleaning project..."
+	@echo "Removing uploaded photos..."
+	@rm -rf uploads/photos/*
+	@echo "Photos deleted"
 
 re: clean all
 
 rdev: clean dev
 
-# Docker commands
 docker-up:
 	@echo "Starting Docker containers..."
 	$(DOCKER_COMPOSE) up -d
@@ -44,14 +46,36 @@ docker-logs:
 	@echo "Showing Docker logs..."
 	$(DOCKER_COMPOSE) logs -f
 
-docker-db:
+docker-db: generate-db-password
 	@echo "Starting only the database container..."
 	$(DOCKER_COMPOSE) up -d db
+
+generate-db-password:
+	@if [ ! -f .env ]; then touch .env; fi
+	@if ! grep -q "^DB_PASSWORD=" .env 2>/dev/null; then \
+		DB_PASS=$$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32); \
+		echo "DB_PASSWORD=$$DB_PASS" >> .env; \
+		echo "Generated new DB_PASSWORD in .env"; \
+	fi
+
+setup:
+	@if [ ! -f .env ]; then touch .env; fi
+	@if ! grep -q "^SESSION_SECRET=" .env 2>/dev/null; then \
+		SESSION_SEC=$$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32); \
+		echo "SESSION_SECRET=$$SESSION_SEC" >> .env; \
+		echo "Generated new SESSION_SECRET in .env"; \
+	else \
+		echo "SESSION_SECRET already exists in .env"; \
+	fi
 
 docker-clean:
 	@echo "Removing Docker containers and volumes..."
 	$(DOCKER_COMPOSE) down -v
+	@if [ -f .env ]; then \
+		sed -i '/^DB_PASSWORD=/d' .env; \
+		echo "Removed DB_PASSWORD from .env"; \
+	fi
 
 docker-restart: docker-down docker-up
 
-.PHONY: all dev init-db clean-db clean re rdev docker-up docker-down docker-build docker-logs docker-db docker-clean docker-restart
+.PHONY: all dev init-db clean-db clean re rdev docker-up docker-down docker-build docker-logs docker-db docker-clean docker-restart generate-db-password setup

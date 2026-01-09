@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       POSTGRES_DB: ${DB_NAME:-matcha}
     ports:
       - "${DB_PORT:-5432}:5432"
@@ -28,11 +28,11 @@ services:
         condition: service_healthy
     environment:
       DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       DB_NAME: ${DB_NAME:-matcha}
       DB_HOST: db
       DB_PORT: 5432
-      SESSION_SECRET: ${SESSION_SECRET:-your-session-secret}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
     ports:
       - "${APP_PORT:-3000}:3000"
     volumes:

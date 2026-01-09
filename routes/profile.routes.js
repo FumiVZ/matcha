@@ -2,10 +2,31 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+const FileType = require('file-type');
 const pool = require('../config/db');
 const isAuthenticated = require('../middlewares/isAuthenticated');
 
 const router = express.Router();
+
+// Allowed file extensions and MIME types
+const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png'];
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png'];
+
+// Sanitize filename to prevent path traversal
+const sanitizeFilename = (filename) => {
+    // Extract only the base filename (no path components)
+    const baseName = path.basename(filename);
+    // Remove any characters that could be dangerous
+    return baseName.replace(/[^a-zA-Z0-9._-]/g, '_');
+};
+
+// Generate secure random filename
+const generateSecureFilename = (userId, originalname) => {
+    const ext = path.extname(originalname).toLowerCase();
+    const randomPart = crypto.randomBytes(16).toString('hex');
+    return `${userId}_${Date.now()}_${randomPart}${ext}`;
+};
 
 // Multer configuration for photo uploads
 const storage = multer.diskStorage({
@@ -14,20 +35,26 @@ const storage = multer.diskStorage({
         cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
-        // Generate unique filename: userId_timestamp_originalname
-        const uniqueName = `${req.session.userId}_${Date.now()}_${file.originalname}`;
+        // Generate secure unique filename with random component
+        const uniqueName = generateSecureFilename(req.session.userId, file.originalname);
         cb(null, uniqueName);
     }
 });
 
-// File filter to only accept images
+// File filter to validate extension and MIME type
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-    if (allowedTypes.includes(file.mimetype)) {
-        cb(null, true);
-    } else {
-        cb(new Error('Only JPEG and PNG images are allowed'), false);
+    // Check MIME type
+    if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+        return cb(new Error('Only JPEG and PNG images are allowed'), false);
     }
+    
+    // Check file extension
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+        return cb(new Error('Only .jpg, .jpeg, and .png extensions are allowed'), false);
+    }
+    
+    cb(null, true);
 };
 
 const upload = multer({
@@ -98,6 +125,18 @@ router.post('/setup', isAuthenticated, upload.array('photos', 5), async (req, re
         // Validate required photos (at least one)
         if (!req.files || req.files.length === 0) {
             return res.status(400).send('Please upload at least one photo');
+        }
+
+        // Validate file contents using magic bytes
+        for (const file of req.files) {
+            const fileType = await FileType.fromFile(file.path);
+            if (!fileType || !ALLOWED_MIME_TYPES.includes(fileType.mime)) {
+                // Delete all uploaded files if validation fails
+                for (const f of req.files) {
+                    fs.unlink(f.path, () => {});
+                }
+                return res.status(400).send('Invalid file content. Only real JPEG and PNG images are allowed.');
+            }
         }
 
         // Validate required tags (at least one)
