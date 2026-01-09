@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matcha - Vérifiez votre email</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            max-width: 500px;
+            margin: 2rem auto;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        p {
+            color: #666;
+            line-height: 1.6;
+        }
+        .resend-form {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #eee;
+        }
+        input {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 0.5rem;
+            font-size: 1rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .back-link {
+            margin-top: 1.5rem;
+        }
+        .back-link a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Matcha</h1>
+
+    <div class="container">
+        <div class="icon">📧</div>
+        <h2>Vérifiez votre email</h2>
+        <p>
+            Un email de vérification a été envoyé à votre adresse email.
+            <br><br>
+            Cliquez sur le lien dans l'email pour activer votre compte.
+            <br><br>
+            <strong>Le lien expire dans 24 heures.</strong>
+        </p>
+        
+        <div class="resend-form">
+            <p style="font-size: 0.9rem;">Vous n'avez pas reçu l'email ?</p>
+            <form action="/auth/resend-verification" method="POST">
+                <input type="email" name="email" placeholder="Votre adresse email" required />
+                <button type="submit">Renvoyer l'email</button>
+            </form>
+        </div>
+        
+        <div class="back-link">
+            <a href="/auth">← Retour à la connexion</a>
+        </div>
+    </div>
+
+</body>
+</html>

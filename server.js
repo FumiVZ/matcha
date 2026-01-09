@@ -107,7 +107,7 @@ app.get('/dashboard', isProfileComplete, async (req, res) => {
     try {
         // Fetch user profile data
         const userResult = await pool.query(
-            `SELECT id, email, gender, sexual_preference, biography 
+            `SELECT id, first_name, name, gender, sexual_preference, biography 
              FROM users WHERE id = $1`,
             [req.session.userId]
         );
@@ -144,6 +144,8 @@ app.get('/dashboard', isProfileComplete, async (req, res) => {
             // Escape all user-provided data to prevent XSS
             const html = data
                 .replace('<%= userId %>', escapeHtml(user.id))
+                .replace('<%= firstName %>', escapeHtml(user.first_name || ''))
+                .replace('<%= name %>', escapeHtml(user.name || ''))
                 .replace('<%= email %>', escapeHtml(user.email))
                 .replace('<%= gender %>', escapeHtml(user.gender || ''))
                 .replace('<%= sexualPreference %>', escapeHtml(user.sexual_preference || ''))

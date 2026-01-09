@@ -113,12 +113,12 @@ router.get('/setup', isAuthenticated, async (req, res) => {
 
 // POST /profile/setup - Submit profile data
 router.post('/setup', isAuthenticated, upload.array('photos', 5), async (req, res) => {
-    const { gender, sexual_preference, biography, tags, profile_photo_index } = req.body;
+    const { first_name, name, gender, sexual_preference, biography, tags, profile_photo_index } = req.body;
     const userId = req.session.userId;
 
     try {
         // Validate required fields
-        if (!gender || !sexual_preference || !biography) {
+        if (!first_name || !name || !gender || !sexual_preference || !biography) {
             return res.status(400).send('Please fill in all required fields');
         }
 
@@ -147,9 +147,9 @@ router.post('/setup', isAuthenticated, upload.array('photos', 5), async (req, re
         // Update user profile
         await pool.query(
             `UPDATE users 
-             SET gender = $1, sexual_preference = $2, biography = $3, profile_complete = TRUE 
-             WHERE id = $4`,
-            [gender, sexual_preference, biography, userId]
+             SET first_name = $1, name = $2, gender = $3, sexual_preference = $4, biography = $5, profile_complete = TRUE 
+             WHERE id = $6`,
+            [first_name, name, gender, sexual_preference, biography, userId]
         );
 
         // Handle tags (can be a single value or array)

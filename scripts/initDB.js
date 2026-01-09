@@ -42,6 +42,8 @@ const predefinedTags = [
         await pool.query(`
             CREATE TABLE users (
                 id SERIAL PRIMARY KEY,
+                first_name VARCHAR(100),
+                name VARCHAR(100),
                 email VARCHAR(255) UNIQUE NOT NULL,
                 password VARCHAR(255) NOT NULL,
                 gender VARCHAR(20),
@@ -49,7 +51,10 @@ const predefinedTags = [
                 biography TEXT,
                 profile_complete BOOLEAN DEFAULT FALSE,
                 last_logout TIMESTAMP,
-                score INT DEFAULT 1000
+                score INT DEFAULT 1000,
+                email_verified BOOLEAN DEFAULT FALSE,
+                verification_token VARCHAR(64),
+                verification_token_expires TIMESTAMP
             );
         `);
         console.log('Table users created with profile fields!');

@@ -1,6 +1,8 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const pool = require('../config/db');
+const { sendVerificationEmail } = require('../config/mailer');
 const router = express.Router();
 
 // POST /auth/login
@@ -13,6 +15,11 @@ router.post('/login', async (req, res) => {
 
     const user = result.rows[0];
     if (user && await bcrypt.compare(password, user.password)) {
+        // Check if email is verified
+        if (!user.email_verified) {
+            return res.status(403).send('Please verify your email before logging in. Check your inbox for the verification link.');
+        }
+        
         req.session.userId = user.id;
         req.session.email = user.email;
         res.redirect('/dashboard');
@@ -25,24 +32,126 @@ router.post('/login', async (req, res) => {
 router.post('/register', async (req, res) => {
     const { email, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     try {
-        const result = await pool.query(
-            'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id',
-            [email, hashedPassword]
+        await pool.query(
+            `INSERT INTO users (email, password, verification_token, verification_token_expires) 
+             VALUES ($1, $2, $3, $4) RETURNING id`,
+            [email, hashedPassword, verificationToken, tokenExpires]
         );
 
-        req.session.userId = result.rows[0].id;
-        req.session.email = email;
+        // Send verification email
+        try {
+            await sendVerificationEmail(email, verificationToken);
+        } catch (emailError) {
+            console.error('Failed to send verification email:', emailError);
+            // Delete the user if email fails to send
+            await pool.query('DELETE FROM users WHERE email = $1', [email]);
+            return res.status(500).send('Failed to send verification email. Please try again.');
+        }
         
-        // Redirect to profile setup instead of dashboard
-        res.redirect('/profile/setup');
+        // Redirect to verification pending page
+        res.redirect('/auth/verify-email-sent');
     } catch (error) {
         if (error.code === '23505') { // Unique violation
             return res.status(400).send('Email already registered');
         }
         console.error('Registration error:', error);
         res.status(500).send('Error during registration');
+    }
+});
+
+// GET /auth/verify/:token - Email verification endpoint
+router.get('/verify/:token', async (req, res) => {
+    const { token } = req.params;
+    
+    try {
+        const result = await pool.query(
+            `SELECT id, email FROM users 
+             WHERE verification_token = $1 
+             AND verification_token_expires > NOW()
+             AND email_verified = FALSE`,
+            [token]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(400).send('Invalid or expired verification link. Please register again or request a new verification email.');
+        }
+        
+        const user = result.rows[0];
+        
+        // Mark email as verified and clear token
+        await pool.query(
+            `UPDATE users 
+             SET email_verified = TRUE, 
+                 verification_token = NULL, 
+                 verification_token_expires = NULL 
+             WHERE id = $1`,
+            [user.id]
+        );
+        
+        // Set session and redirect to profile setup
+        req.session.userId = user.id;
+        req.session.email = user.email;
+        
+        res.redirect('/auth/verification-success');
+    } catch (error) {
+        console.error('Verification error:', error);
+        res.status(500).send('Error during email verification');
+    }
+});
+
+// GET /auth/verify-email-sent - Show "check your email" page
+router.get('/verify-email-sent', (req, res) => {
+    res.sendFile('verify-email.html', { root: './pages' });
+});
+
+// GET /auth/verification-success - Show success page
+router.get('/verification-success', (req, res) => {
+    res.sendFile('verification-success.html', { root: './pages' });
+});
+
+// POST /auth/resend-verification - Resend verification email
+router.post('/resend-verification', async (req, res) => {
+    const { email } = req.body;
+    
+    try {
+        const result = await pool.query(
+            'SELECT id, email_verified FROM users WHERE email = $1',
+            [email]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).send('Email not found');
+        }
+        
+        const user = result.rows[0];
+        
+        if (user.email_verified) {
+            return res.status(400).send('Email is already verified');
+        }
+        
+        // Generate new token
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        
+        await pool.query(
+            `UPDATE users 
+             SET verification_token = $1, verification_token_expires = $2 
+             WHERE id = $3`,
+            [verificationToken, tokenExpires, user.id]
+        );
+        
+        await sendVerificationEmail(email, verificationToken);
+        
+        res.send('Verification email sent! Please check your inbox.');
+    } catch (error) {
+        console.error('Resend verification error:', error);
+        res.status(500).send('Failed to resend verification email');
     }
 });
 
