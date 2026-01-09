@@ -5,8 +5,10 @@ all: docker-db init-db
 	node server.js
 
 dev: docker-db init-db
-	@echo "Starting development server..."
-	npx nodemon server.js
+	@echo "Starting development servers (Back & Front)..."
+	@npx concurrently -n "BACK,FRONT" -c "blue,magenta" \
+		"npx nodemon server.js" \
+		"cd front && npm run dev"
 
 init-db:
 	@echo "Waiting for database to be ready..."
@@ -78,4 +80,16 @@ docker-clean:
 
 docker-restart: docker-down docker-up
 
-.PHONY: all dev init-db clean-db clean re rdev docker-up docker-down docker-build docker-logs docker-db docker-clean docker-restart generate-db-password setup
+front:
+	@echo "Starting frontend server..."
+	cd front && npm run dev
+
+build-front:
+	@echo "Building frontend..."
+	cd front && npm run build
+
+install-front:
+	@echo "Installing frontend dependencies..."
+	cd front && npm install
+
+.PHONY: all dev init-db clean-db clean re rdev docker-up docker-down docker-build docker-logs docker-db docker-clean docker-restart generate-db-password setup front install-front

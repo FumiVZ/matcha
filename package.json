@@ -22,5 +22,8 @@
     "http": "^0.0.1-security",
     "multer": "^2.0.2",
     "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

@@ -213,6 +213,47 @@ router.get('/api/tags', isAuthenticated, async (req, res) => {
     }
 });
 
+// GET /me - Get current user profile
+router.get('/me', isAuthenticated, async (req, res) => {
+    try {
+        const userResult = await pool.query(
+            `SELECT id, email, gender, sexual_preference, biography 
+             FROM users WHERE id = $1`,
+            [req.session.userId]
+        );
+        const user = userResult.rows[0];
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const photoResult = await pool.query(
+            `SELECT file_path FROM user_photos 
+             WHERE user_id = $1 AND is_profile_photo = true 
+             LIMIT 1`,
+            [req.session.userId]
+        );
+        const profilePhoto = photoResult.rows[0]?.file_path || null;
+
+        const tagsResult = await pool.query(
+            `SELECT t.name FROM tags t 
+             JOIN user_tags ut ON t.id = ut.tag_id 
+             WHERE ut.user_id = $1`,
+            [req.session.userId]
+        );
+        const tags = tagsResult.rows.map(row => row.name);
+
+        res.json({
+            user,
+            profilePhoto: profilePhoto ? `/uploads/photos/${profilePhoto}` : null,
+            tags
+        });
+    } catch (error) {
+        console.error('Error fetching profile:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // Error handling middleware for multer errors
 router.use((error, req, res, next) => {
     if (error instanceof multer.MulterError) {

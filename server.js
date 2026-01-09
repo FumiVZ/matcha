@@ -12,6 +12,7 @@ if (missingVars.length > 0) {
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const pool = require('./config/db');
 const logger = require('./events/logger');
 const authRoutes = require('./routes/auth.routes');
 const profileRoutes = require('./routes/profile.routes');
@@ -83,86 +84,12 @@ app.use((req, res, next) => {
     next();
 });
 
-// Routes vers les pages HTML
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'pages', 'index.html'));
-});
+// Serve React App
+app.use(express.static(path.join(__dirname, 'front/dist')));
 
-app.get('/about', (req, res) => {
-    res.sendFile(path.join(__dirname, 'pages', 'about.html'));
-});
-
-app.get('/contact', (req, res) => {
-    res.sendFile(path.join(__dirname, 'pages', 'contact.html'));
-});
-
-app.get('/auth', (req, res) => {
-    res.sendFile(path.join(__dirname, 'pages', 'auth.html'));
-});
-
-
-const pool = require('./config/db');
-
-app.get('/dashboard', isProfileComplete, async (req, res) => {
-    try {
-        // Fetch user profile data
-        const userResult = await pool.query(
-            `SELECT id, email, gender, sexual_preference, biography 
-             FROM users WHERE id = $1`,
-            [req.session.userId]
-        );
-        const user = userResult.rows[0];
-
-        if (!user) {
-            return res.status(404).send('User not found');
-        }
-
-        // Fetch user's profile photo
-        const photoResult = await pool.query(
-            `SELECT file_path FROM user_photos 
-             WHERE user_id = $1 AND is_profile_photo = true 
-             LIMIT 1`,
-            [req.session.userId]
-        );
-        const profilePhoto = photoResult.rows[0]?.file_path || null;
-
-        // Fetch user's tags
-        const tagsResult = await pool.query(
-            `SELECT t.name FROM tags t 
-             JOIN user_tags ut ON t.id = ut.tag_id 
-             WHERE ut.user_id = $1`,
-            [req.session.userId]
-        );
-        const tags = tagsResult.rows.map(row => row.name);
-
-        const dashboardPath = path.join(__dirname, 'pages', 'dashboard.html');
-        fs.readFile(dashboardPath, 'utf8', (err, data) => {
-            if (err) {
-                return res.status(500).send('Erreur lors du chargement du dashboard');
-            }
-            
-            // Escape all user-provided data to prevent XSS
-            const html = data
-                .replace('<%= userId %>', escapeHtml(user.id))
-                .replace('<%= email %>', escapeHtml(user.email))
-                .replace('<%= gender %>', escapeHtml(user.gender || ''))
-                .replace('<%= sexualPreference %>', escapeHtml(user.sexual_preference || ''))
-                .replace('<%= biography %>', escapeHtml(user.biography || ''))
-                .replace('<%= profilePhoto %>', profilePhoto ? `/uploads/photos/${escapeHtml(profilePhoto)}` : '')
-                .replace('<%= tags %>', JSON.stringify(tags.map(tag => escapeHtml(tag))));
-            
-            res.send(html);
-        });
-    } catch (error) {
-        console.error('Error loading dashboard:', error);
-        res.status(500).send('Server error');
-    }
-});
-
-
-// 404 - page non trouvée
-app.use((req, res) => {
-    res.status(404).sendFile(path.join(__dirname, 'pages', '404.html'));
+// Handle React routing, return all requests to React app
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'front/dist', 'index.html'));
 });
 
 // Lancement du serveur
