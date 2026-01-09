@@ -1,5 +1,14 @@
 // server.js
 require('dotenv').config();
+
+// Validate required environment variables
+const requiredEnvVars = ['SESSION_SECRET'];
+const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+if (missingVars.length > 0) {
+    console.error(`Missing required environment variables: ${missingVars.join(', ')}`);
+    process.exit(1);
+}
+
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
