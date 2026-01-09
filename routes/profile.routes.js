@@ -118,7 +118,7 @@ router.post('/setup', isAuthenticated, upload.array('photos', 5), async (req, re
 
     try {
         // Validate required fields
-        if (!first_name || !name || !gender || !sexual_preference || !biography) {
+        if (!gender || !sexual_preference || !biography) {
             return res.status(400).send('Please fill in all required fields');
         }
 

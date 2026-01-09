@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const pool = require('../config/db');
-const { sendVerificationEmail } = require('../config/mailer');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('../config/mailer');
 const router = express.Router();
 
 // POST /auth/login
@@ -153,6 +153,115 @@ router.post('/resend-verification', async (req, res) => {
         console.error('Resend verification error:', error);
         res.status(500).send('Failed to resend verification email');
     }
+});
+
+// GET /auth/forgot-password - Show forgot password page
+router.get('/forgot-password', (req, res) => {
+    res.sendFile('forgot-password.html', { root: './pages' });
+});
+
+// POST /auth/forgot-password - Send password reset email
+router.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    
+    try {
+        const result = await pool.query(
+            'SELECT id FROM users WHERE email = $1',
+            [email]
+        );
+        
+        // Always show success message to prevent email enumeration
+        if (result.rows.length === 0) {
+            return res.send('If this email exists, a password reset link has been sent.');
+        }
+        
+        const user = result.rows[0];
+        
+        // Generate reset token (expires in 1 hour)
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const tokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+        
+        await pool.query(
+            `UPDATE users 
+             SET reset_token = $1, reset_token_expires = $2 
+             WHERE id = $3`,
+            [resetToken, tokenExpires, user.id]
+        );
+        
+        await sendPasswordResetEmail(email, resetToken);
+        
+        res.send('If this email exists, a password reset link has been sent.');
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).send('Failed to process password reset request');
+    }
+});
+
+// GET /auth/reset-password/:token - Show reset password form
+router.get('/reset-password/:token', async (req, res) => {
+    const { token } = req.params;
+    
+    try {
+        const result = await pool.query(
+            `SELECT id FROM users 
+             WHERE reset_token = $1 
+             AND reset_token_expires > NOW()`,
+            [token]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(400).send('Invalid or expired reset link. Please request a new password reset.');
+        }
+        
+        res.sendFile('reset-password.html', { root: './pages' });
+    } catch (error) {
+        console.error('Reset password page error:', error);
+        res.status(500).send('Error loading reset password page');
+    }
+});
+
+// POST /auth/reset-password/:token - Process password reset
+router.post('/reset-password/:token', async (req, res) => {
+    const { token } = req.params;
+    const { password } = req.body;
+    
+    if (!password || password.length < 6) {
+        return res.status(400).send('Password must be at least 6 characters');
+    }
+    
+    try {
+        const result = await pool.query(
+            `SELECT id FROM users 
+             WHERE reset_token = $1 
+             AND reset_token_expires > NOW()`,
+            [token]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(400).send('Invalid or expired reset link. Please request a new password reset.');
+        }
+        
+        const user = result.rows[0];
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // Update password and clear reset token
+        await pool.query(
+            `UPDATE users 
+             SET password = $1, reset_token = NULL, reset_token_expires = NULL 
+             WHERE id = $2`,
+            [hashedPassword, user.id]
+        );
+        
+        res.redirect('/auth/password-reset-success');
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).send('Error resetting password');
+    }
+});
+
+// GET /auth/password-reset-success - Show success page
+router.get('/password-reset-success', (req, res) => {
+    res.sendFile('password-reset-success.html', { root: './pages' });
 });
 
 // POST /auth/logout

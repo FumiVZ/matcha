@@ -54,7 +54,9 @@ const predefinedTags = [
                 score INT DEFAULT 1000,
                 email_verified BOOLEAN DEFAULT FALSE,
                 verification_token VARCHAR(64),
-                verification_token_expires TIMESTAMP
+                verification_token_expires TIMESTAMP,
+                reset_token VARCHAR(64),
+                reset_token_expires TIMESTAMP
             );
         `);
         console.log('Table users created with profile fields!');

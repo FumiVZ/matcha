@@ -77,13 +77,13 @@ app.get('/uploads/photos/:filename', isAuthenticated, async (req, res) => {
 });
 
 
-// Middleware pour logger chaque page visitée
+// Middleware to log each page visited
 app.use((req, res, next) => {
     logger.emit('pageVisited', req.path);
     next();
 });
 
-// Routes vers les pages HTML
+// Routes to HTML pages
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'pages', 'index.html'));
 });
@@ -138,7 +138,7 @@ app.get('/dashboard', isProfileComplete, async (req, res) => {
         const dashboardPath = path.join(__dirname, 'pages', 'dashboard.html');
         fs.readFile(dashboardPath, 'utf8', (err, data) => {
             if (err) {
-                return res.status(500).send('Erreur lors du chargement du dashboard');
+                return res.status(500).send('Error loading dashboard');
             }
             
             // Escape all user-provided data to prevent XSS
@@ -162,12 +162,12 @@ app.get('/dashboard', isProfileComplete, async (req, res) => {
 });
 
 
-// 404 - page non trouvée
+// 404 - page not found
 app.use((req, res) => {
     res.status(404).sendFile(path.join(__dirname, 'pages', '404.html'));
 });
 
-// Lancement du serveur
+// Start the server
 app.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}`);
 });
