@@ -151,6 +151,94 @@
             font-style: italic;
         }
         
+        .viewers-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background-color: #fff3e0;
+            border-radius: 8px;
+            border-left: 4px solid #ff9800;
+        }
+        
+        .viewers-section h2 {
+            font-size: 1rem;
+            color: #555;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .viewer-count {
+            background-color: #ff9800;
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+        
+        .viewers-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .viewer-card {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem 0.5rem 0.5rem;
+            background-color: white;
+            border-radius: 25px;
+            text-decoration: none;
+            color: inherit;
+            transition: box-shadow 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .viewer-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        
+        .viewer-photo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .viewer-photo-placeholder {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 1rem;
+        }
+        
+        .viewer-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .viewer-name {
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #333;
+        }
+        
+        .viewer-time {
+            font-size: 0.75rem;
+            color: #888;
+        }
+        
+        .no-viewers {
+            color: #888;
+            font-style: italic;
+        }
+        
         .actions {
             display: flex;
             gap: 1rem;
@@ -230,6 +318,9 @@
                     
                     <span class="detail-label">Interested in:</span>
                     <span class="detail-value" id="preferenceValue"></span>
+                    
+                    <span class="detail-label">Location:</span>
+                    <span class="detail-value" id="locationValue"></span>
                 </div>
             </div>
         </div>
@@ -244,7 +335,16 @@
             <div class="tags-container" id="tagsContainer"></div>
         </div>
         
+        <div class="viewers-section">
+            <h2>Who Viewed My Profile <span class="viewer-count" id="viewerCount">0</span></h2>
+            <div class="viewers-list" id="viewersList">
+                <span class="no-viewers">Loading...</span>
+            </div>
+        </div>
+        
         <div class="actions">
+            <a href="/users/browse" class="edit-button" style="background-color: #4CAF50;">Browse Users</a>
+            <a href="/profile/edit" class="edit-button">Edit Profile</a>
             <form action="/auth/logout" method="POST" style="margin: 0;">
                 <button type="submit" class="logout-button">Logout</button>
             </form>
@@ -253,10 +353,14 @@
     
     <script>
         // Profile data from server
+        const firstName = '<%= firstName %>';
+        const lastName = '<%= name %>';
         const profilePhoto = '<%= profilePhoto %>';
         const gender = '<%= gender %>';
         const sexualPreference = '<%= sexualPreference %>';
         const tags = <%= tags %>;
+        const locationCity = '<%= locationCity %>';
+        const locationCountry = '<%= locationCountry %>';
         
         // Display profile photo or placeholder
         const photoContainer = document.getElementById('photoContainer');
@@ -266,9 +370,13 @@
             photoContainer.innerHTML = '<div class="profile-photo-placeholder">?</div>';
         }
         
-        // Display name (use email as fallback since no first/last name in DB)
+        // Display name
         const profileName = document.getElementById('profileName');
-        profileName.textContent = 'User #<%= userId %>';
+        if (firstName || lastName) {
+            profileName.textContent = [firstName, lastName].filter(Boolean).join(' ');
+        } else {
+            profileName.textContent = 'User #<%= userId %>';
+        }
         
         // Format and display gender
         const genderValue = document.getElementById('genderValue');
@@ -277,8 +385,18 @@
         
         // Format and display preference
         const preferenceValue = document.getElementById('preferenceValue');
-        const prefMap = { 'male': 'Men', 'female': 'Women', 'both': 'Both' };
+        const prefMap = { 'male': 'Male', 'female': 'Female', 'both': 'Both' };
         preferenceValue.textContent = prefMap[sexualPreference] || sexualPreference || 'Not specified';
+        
+        // Display location
+        const locationValue = document.getElementById('locationValue');
+        if (locationCity && locationCountry) {
+            locationValue.textContent = `${locationCity}, ${locationCountry}`;
+        } else if (locationCity || locationCountry) {
+            locationValue.textContent = locationCity || locationCountry;
+        } else {
+            locationValue.textContent = 'Not specified';
+        }
         
         // Display tags
         const tagsContainer = document.getElementById('tagsContainer');
@@ -287,6 +405,59 @@
         } else {
             tagsContainer.innerHTML = '<span class="no-tags">No interests selected</span>';
         }
+        
+        // Fetch and display profile viewers
+        async function loadViewers() {
+            const viewersList = document.getElementById('viewersList');
+            const viewerCount = document.getElementById('viewerCount');
+            
+            try {
+                const response = await fetch('/users/api/viewers');
+                const viewers = await response.json();
+                
+                viewerCount.textContent = viewers.length;
+                
+                if (viewers.length === 0) {
+                    viewersList.innerHTML = '<span class="no-viewers">No one has viewed your profile yet</span>';
+                    return;
+                }
+                
+                viewersList.innerHTML = viewers.map(viewer => {
+                    const name = [viewer.first_name, viewer.name].filter(Boolean).join(' ') || `User #${viewer.id}`;
+                    const photoHtml = viewer.profile_photo
+                        ? `<img src="/uploads/photos/${viewer.profile_photo}" alt="${name}" class="viewer-photo">`
+                        : `<div class="viewer-photo-placeholder">?</div>`;
+                    const timeAgo = getTimeAgo(new Date(viewer.viewed_at));
+                    
+                    return `
+                        <a href="/users/profile/${viewer.id}" class="viewer-card">
+                            ${photoHtml}
+                            <div class="viewer-info">
+                                <span class="viewer-name">${name}</span>
+                                <span class="viewer-time">${timeAgo}</span>
+                            </div>
+                        </a>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading viewers:', error);
+                viewersList.innerHTML = '<span class="no-viewers">Failed to load viewers</span>';
+            }
+        }
+        
+        // Helper function to format time ago
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            if (seconds < 60) return 'Just now';
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+            if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+            return date.toLocaleDateString();
+        }
+        
+        // Load viewers on page load
+        loadViewers();
     </script>
 </body>
 </html>

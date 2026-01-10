@@ -48,8 +48,8 @@
       <a href="/about">About</a>
       <a href="/contact">Contact</a>
     </nav>
-    <div style="text-align: center;">
-      <a href="/auth" class="auth-button">Login / Sign Up</a>
+    <div id="auth-buttons" style="text-align: center;">
+      <!-- Buttons will be dynamically loaded -->
     </div>
   </header>
 
@@ -66,5 +66,33 @@
   <footer>
     <p>&copy; 2025 Mini Node Server Project</p>
   </footer>
+
+  <script>
+    // Check authentication status and update UI
+    (async function() {
+      const authButtons = document.getElementById('auth-buttons');
+      
+      try {
+        const response = await fetch('/auth/status');
+        const data = await response.json();
+        
+        if (data.authenticated) {
+          const greeting = data.firstName ? `Hi, ${data.firstName}!` : 'Welcome back!';
+          authButtons.innerHTML = `
+            <span style="margin-right: 1rem; color: #333;">${greeting}</span>
+            <a href="/dashboard" class="auth-button">Dashboard</a>
+            <form action="/auth/logout" method="POST" style="display: inline;">
+              <button type="submit" class="auth-button" style="background-color: #666; border: none; cursor: pointer;">Logout</button>
+            </form>
+          `;
+        } else {
+          authButtons.innerHTML = '<a href="/auth" class="auth-button">Login / Sign Up</a>';
+        }
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+        authButtons.innerHTML = '<a href="/auth" class="auth-button">Login / Sign Up</a>';
+      }
+    })();
+  </script>
 </body>
 </html>

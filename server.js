@@ -15,6 +15,7 @@ const fs = require('fs');
 const logger = require('./events/logger');
 const authRoutes = require('./routes/auth.routes');
 const profileRoutes = require('./routes/profile.routes');
+const usersRoutes = require('./routes/users.routes');
 const sessionConfig = require('./config/session');
 const isAuthenticated = require('./middlewares/isAuthenticated');
 const isProfileComplete = require('./middlewares/isProfileComplete');
@@ -37,6 +38,7 @@ app.use(express.json());
 app.use(sessionConfig);
 app.use('/auth', authRoutes);
 app.use('/profile', profileRoutes);
+app.use('/users', usersRoutes);
 
 // Serve uploaded photos with security headers and authorization
 app.get('/uploads/photos/:filename', isAuthenticated, async (req, res) => {
@@ -105,9 +107,10 @@ const pool = require('./config/db');
 
 app.get('/dashboard', isProfileComplete, async (req, res) => {
     try {
-        // Fetch user profile data
+        // Fetch user profile data including location
         const userResult = await pool.query(
-            `SELECT id, first_name, name, gender, sexual_preference, biography 
+            `SELECT id, first_name, name, gender, sexual_preference, biography,
+                    location_city, location_country 
              FROM users WHERE id = $1`,
             [req.session.userId]
         );
@@ -151,7 +154,9 @@ app.get('/dashboard', isProfileComplete, async (req, res) => {
                 .replace('<%= sexualPreference %>', escapeHtml(user.sexual_preference || ''))
                 .replace('<%= biography %>', escapeHtml(user.biography || ''))
                 .replace('<%= profilePhoto %>', profilePhoto ? `/uploads/photos/${escapeHtml(profilePhoto)}` : '')
-                .replace('<%= tags %>', JSON.stringify(tags.map(tag => escapeHtml(tag))));
+                .replace('<%= tags %>', JSON.stringify(tags.map(tag => escapeHtml(tag))))
+                .replace('<%= locationCity %>', escapeHtml(user.location_city || ''))
+                .replace('<%= locationCountry %>', escapeHtml(user.location_country || ''));
             
             res.send(html);
         });

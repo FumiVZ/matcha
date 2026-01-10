@@ -113,13 +113,22 @@ router.get('/setup', isAuthenticated, async (req, res) => {
 
 // POST /profile/setup - Submit profile data
 router.post('/setup', isAuthenticated, upload.array('photos', 5), async (req, res) => {
-    const { first_name, name, gender, sexual_preference, biography, tags, profile_photo_index } = req.body;
+    const { 
+        first_name, name, gender, sexual_preference, biography, tags, profile_photo_index,
+        location_city, location_country, location_latitude, location_longitude, 
+        location_consent, location_manual 
+    } = req.body;
     const userId = req.session.userId;
 
     try {
         // Validate required fields
         if (!gender || !sexual_preference || !biography) {
             return res.status(400).send('Please fill in all required fields');
+        }
+        
+        // Validate location
+        if (!location_city || !location_country) {
+            return res.status(400).send('Please provide your location');
         }
 
         // Validate required photos (at least one)
@@ -144,12 +153,22 @@ router.post('/setup', isAuthenticated, upload.array('photos', 5), async (req, re
             return res.status(400).send('Please select at least one interest tag');
         }
 
-        // Update user profile
+        // Update user profile with location data
         await pool.query(
             `UPDATE users 
-             SET first_name = $1, name = $2, gender = $3, sexual_preference = $4, biography = $5, profile_complete = TRUE 
-             WHERE id = $6`,
-            [first_name, name, gender, sexual_preference, biography, userId]
+             SET first_name = $1, name = $2, gender = $3, sexual_preference = $4, biography = $5, 
+                 location_city = $6, location_country = $7, 
+                 location_latitude = $8, location_longitude = $9,
+                 location_consent = $10, location_manual = $11,
+                 profile_complete = TRUE 
+             WHERE id = $12`,
+            [
+                first_name, name, gender, sexual_preference, biography,
+                location_city, location_country,
+                location_latitude || null, location_longitude || null,
+                location_consent === 'true', location_manual === 'true',
+                userId
+            ]
         );
 
         // Handle tags (can be a single value or array)
@@ -210,6 +229,213 @@ router.get('/api/tags', isAuthenticated, async (req, res) => {
     } catch (error) {
         console.error('Error fetching tags:', error);
         res.status(500).json({ error: 'Error fetching tags' });
+    }
+});
+
+// GET /api/reverse-geocode - Convert coordinates to city/country (RGPD compliant)
+router.get('/api/reverse-geocode', isAuthenticated, async (req, res) => {
+    const { lat, lon } = req.query;
+    
+    if (!lat || !lon) {
+        return res.status(400).json({ error: 'Latitude and longitude are required' });
+    }
+    
+    try {
+        // Use OpenStreetMap Nominatim for reverse geocoding (free, no API key required)
+        // Nominatim usage policy: https://operations.osmfoundation.org/policies/nominatim/
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`,
+            {
+                headers: {
+                    'User-Agent': 'Matcha-App/1.0' // Required by Nominatim
+                }
+            }
+        );
+        
+        if (!response.ok) {
+            throw new Error('Geocoding service unavailable');
+        }
+        
+        const data = await response.json();
+        
+        // Extract city and country from response
+        const address = data.address || {};
+        const city = address.city || address.town || address.village || address.municipality || address.county || '';
+        const country = address.country || '';
+        
+        res.json({ city, country });
+    } catch (error) {
+        console.error('Reverse geocoding error:', error);
+        res.status(500).json({ error: 'Could not determine location' });
+    }
+});
+
+// GET /api/ip-geolocation - Server-side IP-based location detection (RGPD compliant)
+// The user's IP stays on our server, we only return city/country to the client
+router.get('/api/ip-geolocation', isAuthenticated, async (req, res) => {
+    try {
+        // Get client IP from request
+        // Check X-Forwarded-For for proxied requests, fallback to direct IP
+        const forwarded = req.headers['x-forwarded-for'];
+        let clientIp = forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
+        
+        // Handle IPv6 localhost
+        if (clientIp === '::1' || clientIp === '::ffff:127.0.0.1') {
+            clientIp = ''; // Will trigger ip-api to use the server's public IP
+        }
+        
+        // Remove IPv6 prefix if present
+        if (clientIp && clientIp.startsWith('::ffff:')) {
+            clientIp = clientIp.substring(7);
+        }
+        
+        // Use ip-api.com for IP geolocation (free for non-commercial use, 45 req/min)
+        // RGPD note: IP is processed server-side, only city/country returned to client
+        const apiUrl = clientIp 
+            ? `http://ip-api.com/json/${clientIp}?fields=status,message,city,country,lat,lon`
+            : `http://ip-api.com/json/?fields=status,message,city,country,lat,lon`;
+            
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+        
+        if (data.status === 'success' && data.city && data.country) {
+            // Only return location data, not the IP itself (RGPD compliant)
+            res.json({
+                city: data.city,
+                country: data.country,
+                latitude: data.lat,
+                longitude: data.lon
+            });
+        } else {
+            console.error('IP geolocation failed:', data.message || 'Unknown error');
+            res.status(404).json({ error: 'Could not determine location from IP' });
+        }
+    } catch (error) {
+        console.error('IP geolocation error:', error);
+        res.status(500).json({ error: 'Location service unavailable' });
+    }
+});
+
+// GET /profile/edit - Display profile edit form
+router.get('/edit', isAuthenticated, async (req, res) => {
+    try {
+        // Fetch user data including location
+        const userResult = await pool.query(
+            `SELECT first_name, name, gender, sexual_preference, biography,
+                    location_city, location_country 
+             FROM users WHERE id = $1`,
+            [req.session.userId]
+        );
+        const user = userResult.rows[0];
+
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+
+        // Fetch user's current tags
+        const userTagsResult = await pool.query(
+            `SELECT tag_id FROM user_tags WHERE user_id = $1`,
+            [req.session.userId]
+        );
+        const userTagIds = userTagsResult.rows.map(row => row.tag_id);
+
+        // Get all available tags
+        const tagsResult = await pool.query('SELECT id, name FROM tags ORDER BY name');
+        const tags = tagsResult.rows;
+
+        // Read the profile edit HTML template
+        const templatePath = path.join(__dirname, '..', 'pages', 'profile-edit.html');
+        fs.readFile(templatePath, 'utf8', (err, data) => {
+            if (err) {
+                return res.status(500).send('Error loading profile edit page');
+            }
+
+            // Generate tags checkboxes HTML
+            const tagsHtml = tags.map(tag => 
+                `<label class="tag-label">
+                    <input type="checkbox" name="tags" value="${tag.id}">
+                    <span class="tag-text">${tag.name}</span>
+                </label>`
+            ).join('\n');
+
+            // HTML escape function
+            const escapeHtml = (str) => {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            };
+
+            // Replace template variables
+            const html = data
+                .replace('<%= firstName %>', escapeHtml(user.first_name || ''))
+                .replace('<%= name %>', escapeHtml(user.name || ''))
+                .replace('<%= gender %>', escapeHtml(user.gender || ''))
+                .replace('<%= sexualPreference %>', escapeHtml(user.sexual_preference || ''))
+                .replace('<%= biography %>', escapeHtml(user.biography || ''))
+                .replace('<%= tagsHtml %>', tagsHtml)
+                .replace('<%= userTagIds %>', JSON.stringify(userTagIds))
+                .replace(/<%= locationCity %>/g, escapeHtml(user.location_city || ''))
+                .replace(/<%= locationCountry %>/g, escapeHtml(user.location_country || ''));
+
+            res.send(html);
+        });
+    } catch (error) {
+        console.error('Error loading profile edit:', error);
+        res.status(500).send('Server error');
+    }
+});
+
+// PUT /profile/update - Update profile data
+router.put('/update', isAuthenticated, async (req, res) => {
+    const { first_name, name, gender, sexual_preference, biography, tags, location_city, location_country } = req.body;
+    const userId = req.session.userId;
+
+    try {
+        // Validate required fields
+        if (!gender || !sexual_preference || !biography) {
+            return res.status(400).send('Please fill in all required fields');
+        }
+
+        // Validate tags
+        if (!tags || !Array.isArray(tags) || tags.length === 0) {
+            return res.status(400).send('Please select at least one interest tag');
+        }
+        
+        // Validate location
+        if (!location_city || !location_country) {
+            return res.status(400).send('Please provide your location');
+        }
+
+        // Update user profile including location
+        await pool.query(
+            `UPDATE users 
+             SET first_name = $1, name = $2, gender = $3, sexual_preference = $4, biography = $5,
+                 location_city = $6, location_country = $7 
+             WHERE id = $8`,
+            [first_name || null, name || null, gender, sexual_preference, biography, location_city, location_country, userId]
+        );
+
+        // Update tags
+        // Clear existing user tags
+        await pool.query('DELETE FROM user_tags WHERE user_id = $1', [userId]);
+        
+        // Insert new tags
+        for (const tagId of tags) {
+            await pool.query(
+                'INSERT INTO user_tags (user_id, tag_id) VALUES ($1, $2)',
+                [userId, tagId]
+            );
+        }
+
+        res.status(200).send('Profile updated successfully');
+
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        res.status(500).send('Error updating profile');
     }
 });
 

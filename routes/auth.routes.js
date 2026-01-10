@@ -264,6 +264,35 @@ router.get('/password-reset-success', (req, res) => {
     res.sendFile('password-reset-success.html', { root: './pages' });
 });
 
+// GET /auth/status - Check authentication status
+router.get('/status', async (req, res) => {
+    if (!req.session.userId) {
+        return res.json({ authenticated: false });
+    }
+    
+    try {
+        const result = await pool.query(
+            'SELECT first_name, email, profile_complete FROM users WHERE id = $1',
+            [req.session.userId]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.json({ authenticated: false });
+        }
+        
+        const user = result.rows[0];
+        res.json({
+            authenticated: true,
+            firstName: user.first_name,
+            email: user.email,
+            profileComplete: user.profile_complete
+        });
+    } catch (error) {
+        console.error('Auth status error:', error);
+        res.json({ authenticated: false });
+    }
+});
+
 // POST /auth/logout
 router.post('/logout', async (req, res) => {
     try {

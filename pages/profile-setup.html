@@ -227,6 +227,139 @@
         .required {
             color: #f44336;
         }
+        
+        /* Location section styles */
+        .location-section {
+            margin-bottom: 1rem;
+        }
+        
+        .location-consent-box {
+            background-color: #e3f2fd;
+            border: 1px solid #2196F3;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .location-consent-box h3 {
+            margin: 0 0 0.75rem 0;
+            color: #1976D2;
+            font-size: 1rem;
+        }
+        
+        .location-consent-box p {
+            margin: 0 0 1rem 0;
+            font-size: 0.9rem;
+            color: #555;
+            line-height: 1.5;
+        }
+        
+        .consent-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .consent-btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background-color 0.2s;
+        }
+        
+        .consent-btn.allow {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .consent-btn.allow:hover {
+            background-color: #43A047;
+        }
+        
+        .consent-btn.deny {
+            background-color: #9e9e9e;
+            color: white;
+        }
+        
+        .consent-btn.deny:hover {
+            background-color: #757575;
+        }
+        
+        .location-result {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .location-result.success {
+            background-color: #e8f5e9;
+            border: 1px solid #4CAF50;
+            color: #2e7d32;
+            display: block;
+        }
+        
+        .location-result.error {
+            background-color: #ffebee;
+            border: 1px solid #f44336;
+            color: #c62828;
+            display: block;
+        }
+        
+        .manual-location {
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .manual-location.visible {
+            display: block;
+        }
+        
+        .manual-location-row {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.75rem;
+        }
+        
+        .manual-location-row .form-group {
+            flex: 1;
+        }
+        
+        .manual-location-row label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-weight: bold;
+            color: #555;
+            font-size: 0.9rem;
+        }
+        
+        .manual-location-row input {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.95rem;
+        }
+        
+        .manual-location-row input:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
+        .rgpd-notice {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        
+        .rgpd-notice a {
+            color: #2196F3;
+        }
     </style>
 </head>
 <body>
@@ -288,6 +421,55 @@
                 <div class="tags-container">
                     <%= tagsHtml %>
                 </div>
+            </div>
+            
+            <!-- Location Section (RGPD Compliant) -->
+            <div class="form-section location-section">
+                <h2>Your Location <span class="required">*</span></h2>
+                
+                <div class="location-consent-box">
+                    <h3>We need your location to find matches near you</h3>
+                    <p>
+                        We only store your city and country to show you relevant matches nearby. 
+                        Your precise location (GPS coordinates) is never shared with other users.
+                        You can update or remove your location at any time in your profile settings.
+                    </p>
+                    <div class="consent-buttons">
+                        <button type="button" class="consent-btn allow" onclick="requestGeolocation()">
+                            Allow automatic location
+                        </button>
+                        <button type="button" class="consent-btn deny" onclick="showManualLocation()">
+                            Enter location manually
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="location-result" id="locationResult"></div>
+                
+                <div class="manual-location" id="manualLocation">
+                    <p class="info-text">Please enter your city and country:</p>
+                    <div class="manual-location-row">
+                        <div class="form-group">
+                            <label for="locationCity">City</label>
+                            <input type="text" id="locationCity" name="location_city" placeholder="e.g., Paris">
+                        </div>
+                        <div class="form-group">
+                            <label for="locationCountry">Country</label>
+                            <input type="text" id="locationCountry" name="location_country" placeholder="e.g., France">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Hidden fields for geolocation data -->
+                <input type="hidden" id="locationLatitude" name="location_latitude">
+                <input type="hidden" id="locationLongitude" name="location_longitude">
+                <input type="hidden" id="locationConsent" name="location_consent" value="false">
+                <input type="hidden" id="locationManual" name="location_manual" value="false">
+                
+                <p class="rgpd-notice">
+                    In accordance with GDPR/RGPD, you have the right to access, modify, or delete your location data at any time.
+                    Your data is processed only to provide you with relevant matches and is never sold to third parties.
+                </p>
             </div>
             
             <!-- Photos Section -->
@@ -368,7 +550,147 @@
                 alert('Please select at least one interest tag');
                 return;
             }
+            
+            // Check if location is provided
+            const locationCity = document.getElementById('locationCity').value;
+            const locationCountry = document.getElementById('locationCountry').value;
+            const locationConsent = document.getElementById('locationConsent').value;
+            
+            if (!locationCity || !locationCountry) {
+                e.preventDefault();
+                alert('Please provide your location (either automatically or manually)');
+                return;
+            }
         });
+        
+        // Geolocation functions
+        function requestGeolocation() {
+            const resultDiv = document.getElementById('locationResult');
+            resultDiv.className = 'location-result';
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = 'Requesting location...';
+            
+            if (!navigator.geolocation) {
+                resultDiv.className = 'location-result error';
+                resultDiv.textContent = 'Geolocation is not supported by your browser. Please enter your location manually.';
+                showManualLocation();
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    // Store coordinates
+                    document.getElementById('locationLatitude').value = lat;
+                    document.getElementById('locationLongitude').value = lon;
+                    document.getElementById('locationConsent').value = 'true';
+                    document.getElementById('locationManual').value = 'false';
+                    
+                    // Reverse geocode to get city/country
+                    try {
+                        const response = await fetch(`/profile/api/reverse-geocode?lat=${lat}&lon=${lon}`);
+                        const data = await response.json();
+                        
+                        if (data.city && data.country) {
+                            document.getElementById('locationCity').value = data.city;
+                            document.getElementById('locationCountry').value = data.country;
+                            
+                            resultDiv.className = 'location-result success';
+                            resultDiv.textContent = `Location detected: ${data.city}, ${data.country}`;
+                            
+                            // Hide manual input since we got the location
+                            document.getElementById('manualLocation').classList.remove('visible');
+                        } else {
+                            throw new Error('Could not determine city/country');
+                        }
+                    } catch (error) {
+                        console.error('Reverse geocoding error:', error);
+                        resultDiv.className = 'location-result error';
+                        resultDiv.textContent = 'Could not determine your city. Please enter it manually.';
+                        showManualLocation();
+                    }
+                },
+                async (error) => {
+                    console.error('Geolocation error:', error);
+                    
+                    // Try IP-based geolocation as fallback
+                    resultDiv.textContent = 'Browser location failed. Trying IP-based detection...';
+                    
+                    const ipLocationSuccess = await tryIpGeolocation(resultDiv);
+                    if (!ipLocationSuccess) {
+                        resultDiv.className = 'location-result error';
+                        
+                        let message = 'Could not get your location. ';
+                        switch (error.code) {
+                            case error.PERMISSION_DENIED:
+                                message += 'You denied the request. Please enter your location manually.';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                message += 'Location information is unavailable. Please enter manually.';
+                                break;
+                            case error.TIMEOUT:
+                                message += 'The request timed out. Please enter manually.';
+                                break;
+                            default:
+                                message += 'Please enter your location manually.';
+                        }
+                        
+                        resultDiv.textContent = message;
+                        showManualLocation();
+                    }
+                },
+                {
+                    enableHighAccuracy: false,
+                    timeout: 10000,
+                    maximumAge: 300000 // 5 minutes cache
+                }
+            );
+        }
+        
+        function showManualLocation() {
+            document.getElementById('manualLocation').classList.add('visible');
+            document.getElementById('locationManual').value = 'true';
+            document.getElementById('locationConsent').value = 'false';
+            // Clear any auto-detected coordinates for privacy
+            document.getElementById('locationLatitude').value = '';
+            document.getElementById('locationLongitude').value = '';
+        }
+        
+        // IP-based geolocation fallback (RGPD compliant - processed server-side)
+        async function tryIpGeolocation(resultDiv) {
+            try {
+                // Use our server-side endpoint (IP never leaves our server)
+                const response = await fetch('/profile/api/ip-geolocation');
+                
+                if (!response.ok) {
+                    return false;
+                }
+                
+                const data = await response.json();
+                
+                if (data.city && data.country) {
+                    // Store the data
+                    document.getElementById('locationCity').value = data.city;
+                    document.getElementById('locationCountry').value = data.country;
+                    document.getElementById('locationLatitude').value = data.latitude || '';
+                    document.getElementById('locationLongitude').value = data.longitude || '';
+                    document.getElementById('locationConsent').value = 'true';
+                    document.getElementById('locationManual').value = 'false';
+                    
+                    resultDiv.className = 'location-result success';
+                    resultDiv.textContent = `Location detected: ${data.city}, ${data.country}`;
+                    
+                    // Hide manual input since we got the location
+                    document.getElementById('manualLocation').classList.remove('visible');
+                    return true;
+                }
+            } catch (error) {
+                console.error('IP geolocation error:', error);
+            }
+            return false;
+        }
     </script>
 </body>
 </html>

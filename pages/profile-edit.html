@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile - Matcha</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1rem;
+            background-color: #f5f5f5;
+        }
+        
+        .profile-edit {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        
+        .form-section {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .form-section:last-of-type {
+            border-bottom: none;
+        }
+        
+        .form-section h2 {
+            color: #444;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .form-group {
+            flex: 1;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 0.7rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        .form-group input[type="text"]:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
+        .radio-group, .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .radio-label, .checkbox-label {
+            display: flex;
+            align-items: center;
+            padding: 0.7rem 1.2rem;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .radio-label:hover, .checkbox-label:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .radio-label input, .checkbox-label input {
+            margin-right: 0.5rem;
+        }
+        
+        .radio-label input:checked + span,
+        .checkbox-label input:checked + span {
+            font-weight: bold;
+        }
+        
+        .radio-label:has(input:checked),
+        .checkbox-label:has(input:checked) {
+            background-color: #e3f2fd;
+            border: 2px solid #2196F3;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+        
+        .tag-label {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background-color: #f0f0f0;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        
+        .tag-label:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .tag-label input {
+            display: none;
+        }
+        
+        .tag-label:has(input:checked) {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .tag-text::before {
+            content: '#';
+            opacity: 0.7;
+        }
+        
+        .button-row {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .submit-btn {
+            flex: 1;
+            padding: 1rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+        
+        .submit-btn:hover {
+            background-color: #43A047;
+        }
+        
+        .cancel-btn {
+            padding: 1rem 2rem;
+            background-color: #9e9e9e;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+        }
+        
+        .cancel-btn:hover {
+            background-color: #757575;
+        }
+        
+        .info-text {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        
+        .required {
+            color: #f44336;
+        }
+        
+        .location-section {
+            margin-bottom: 1rem;
+        }
+        
+        .location-current {
+            background-color: #e8f5e9;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .location-current-text {
+            color: #2e7d32;
+        }
+        
+        .update-location-btn {
+            padding: 0.5rem 1rem;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .update-location-btn:hover {
+            background-color: #1976D2;
+        }
+        
+        .location-form {
+            display: none;
+        }
+        
+        .location-form.visible {
+            display: block;
+        }
+        
+        .location-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .location-row .form-group {
+            flex: 1;
+        }
+        
+        .location-row label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-weight: bold;
+            color: #555;
+            font-size: 0.9rem;
+        }
+        
+        .location-row input {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.95rem;
+        }
+        
+        .location-buttons {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .geo-btn {
+            padding: 0.6rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .geo-btn.auto {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .geo-btn.auto:hover {
+            background-color: #43A047;
+        }
+        
+        .geo-btn.manual {
+            background-color: #ff9800;
+            color: white;
+        }
+        
+        .geo-btn.manual:hover {
+            background-color: #f57c00;
+        }
+        
+        .location-status {
+            padding: 0.75rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .location-status.success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            display: block;
+        }
+        
+        .location-status.error {
+            background-color: #ffebee;
+            color: #c62828;
+            display: block;
+        }
+        
+        .rgpd-notice {
+            font-size: 0.8rem;
+            color: #888;
+            padding: 0.75rem;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        
+        .success-message {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        @media (max-width: 600px) {
+            .form-row {
+                flex-direction: column;
+            }
+            
+            .button-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="profile-edit">
+        <h1>Edit Profile</h1>
+        <p class="subtitle">Update your profile information</p>
+        
+        <div id="successMessage" class="success-message">Profile updated successfully!</div>
+        <div id="errorMessage" class="error-message"></div>
+        
+        <form id="editForm">
+            
+            <!-- Name Section -->
+            <div class="form-section">
+                <h2>Your Name</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstName">First Name</label>
+                        <input type="text" id="firstName" name="first_name" value="<%= firstName %>" placeholder="Enter your first name">
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name</label>
+                        <input type="text" id="lastName" name="name" value="<%= name %>" placeholder="Enter your last name">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gender Section -->
+            <div class="form-section">
+                <h2>Your Gender <span class="required">*</span></h2>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="gender" value="male" required>
+                        <span>Male</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="gender" value="female" required>
+                        <span>Female</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="gender" value="other" required>
+                        <span>Other</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Sexual Preference Section -->
+            <div class="form-section">
+                <h2>Interested In <span class="required">*</span></h2>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="sexual_preference" value="male" required>
+                        <span>Men</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="sexual_preference" value="female" required>
+                        <span>Women</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="sexual_preference" value="both" required>
+                        <span>Both</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Biography Section -->
+            <div class="form-section">
+                <h2>About You <span class="required">*</span></h2>
+                <p class="info-text">Write a short bio to let others know who you are.</p>
+                <textarea name="biography" id="biography" placeholder="Tell us about yourself, your hobbies, what you're looking for..." required><%= biography %></textarea>
+            </div>
+            
+            <!-- Interests/Tags Section -->
+            <div class="form-section">
+                <h2>Your Interests <span class="required">*</span></h2>
+                <p class="info-text">Select at least one tag that describes your interests.</p>
+                <div class="tags-container" id="tagsContainer">
+                    <%= tagsHtml %>
+                </div>
+            </div>
+            
+            <!-- Location Section -->
+            <div class="form-section location-section">
+                <h2>Your Location <span class="required">*</span></h2>
+                
+                <div class="location-current" id="currentLocation">
+                    <span class="location-current-text">
+                        Current: <strong id="currentLocationText"><%= locationCity %>, <%= locationCountry %></strong>
+                    </span>
+                    <button type="button" class="update-location-btn" onclick="showLocationForm()">Update Location</button>
+                </div>
+                
+                <div class="location-form" id="locationForm">
+                    <div class="location-buttons">
+                        <button type="button" class="geo-btn auto" onclick="requestGeolocation()">
+                            Detect automatically
+                        </button>
+                        <button type="button" class="geo-btn manual" onclick="showManualInput()">
+                            Enter manually
+                        </button>
+                    </div>
+                    
+                    <div class="location-status" id="locationStatus"></div>
+                    
+                    <div class="location-row" id="manualInputRow" style="display: none;">
+                        <div class="form-group">
+                            <label for="locationCity">City</label>
+                            <input type="text" id="locationCity" name="location_city" value="<%= locationCity %>" placeholder="e.g., Paris">
+                        </div>
+                        <div class="form-group">
+                            <label for="locationCountry">Country</label>
+                            <input type="text" id="locationCountry" name="location_country" value="<%= locationCountry %>" placeholder="e.g., France">
+                        </div>
+                    </div>
+                    
+                    <p class="rgpd-notice">
+                        In accordance with GDPR/RGPD, your location data is only used to show you relevant matches. 
+                        You can update or remove it at any time.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="button-row">
+                <a href="/dashboard" class="cancel-btn">Cancel</a>
+                <button type="submit" class="submit-btn">Save Changes</button>
+            </div>
+        </form>
+    </div>
+    
+    <script>
+        // Current user data from server
+        const currentGender = '<%= gender %>';
+        const currentPreference = '<%= sexualPreference %>';
+        const userTagIds = <%= userTagIds %>;
+        
+        // Pre-select current gender
+        if (currentGender) {
+            const genderRadio = document.querySelector(`input[name="gender"][value="${currentGender}"]`);
+            if (genderRadio) genderRadio.checked = true;
+        }
+        
+        // Pre-select current sexual preference
+        if (currentPreference) {
+            const prefRadio = document.querySelector(`input[name="sexual_preference"][value="${currentPreference}"]`);
+            if (prefRadio) prefRadio.checked = true;
+        }
+        
+        // Pre-select current tags
+        if (userTagIds && userTagIds.length > 0) {
+            userTagIds.forEach(tagId => {
+                const tagCheckbox = document.querySelector(`input[name="tags"][value="${tagId}"]`);
+                if (tagCheckbox) tagCheckbox.checked = true;
+            });
+        }
+        
+        // Location form functions
+        function showLocationForm() {
+            document.getElementById('locationForm').classList.add('visible');
+            document.getElementById('currentLocation').style.display = 'none';
+        }
+        
+        function showManualInput() {
+            document.getElementById('manualInputRow').style.display = 'flex';
+            document.getElementById('locationStatus').className = 'location-status';
+            document.getElementById('locationStatus').textContent = '';
+        }
+        
+        // IP-based geolocation fallback (RGPD compliant - processed server-side)
+        async function tryIpGeolocation(statusEl) {
+            try {
+                // Use our server-side endpoint (IP never leaves our server)
+                const response = await fetch('/profile/api/ip-geolocation');
+                
+                if (!response.ok) {
+                    return false;
+                }
+                
+                const data = await response.json();
+                
+                if (data.city && data.country) {
+                    // Update form fields
+                    document.getElementById('locationCity').value = data.city;
+                    document.getElementById('locationCountry').value = data.country;
+                    
+                    // Show success
+                    statusEl.className = 'location-status success';
+                    statusEl.textContent = `Location detected: ${data.city}, ${data.country}`;
+                    
+                    // Show manual input row so user can verify/edit
+                    document.getElementById('manualInputRow').style.display = 'flex';
+                    return true;
+                }
+            } catch (error) {
+                console.error('IP geolocation error:', error);
+            }
+            return false;
+        }
+        
+        async function requestGeolocation() {
+            const statusEl = document.getElementById('locationStatus');
+            statusEl.className = 'location-status';
+            statusEl.textContent = 'Detecting your location...';
+            statusEl.style.display = 'block';
+            statusEl.style.backgroundColor = '#fff3e0';
+            statusEl.style.color = '#e65100';
+            
+            if (!navigator.geolocation) {
+                statusEl.className = 'location-status error';
+                statusEl.textContent = 'Geolocation is not supported by your browser. Please enter manually.';
+                showManualInput();
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    
+                    try {
+                        // Use reverse geocoding to get city/country
+                        const response = await fetch(`/profile/api/reverse-geocode?lat=${latitude}&lon=${longitude}`);
+                        
+                        if (!response.ok) {
+                            throw new Error('Geocoding failed');
+                        }
+                        
+                        const data = await response.json();
+                        
+                        // Update form fields
+                        document.getElementById('locationCity').value = data.city || '';
+                        document.getElementById('locationCountry').value = data.country || '';
+                        
+                        // Show success
+                        statusEl.className = 'location-status success';
+                        statusEl.textContent = `Location detected: ${data.city}, ${data.country}`;
+                        
+                        // Show manual input row so user can verify/edit
+                        document.getElementById('manualInputRow').style.display = 'flex';
+                        
+                    } catch (error) {
+                        console.error('Reverse geocoding error:', error);
+                        statusEl.className = 'location-status error';
+                        statusEl.textContent = 'Could not determine your city. Please enter manually.';
+                        showManualInput();
+                    }
+                },
+                async (error) => {
+                    console.error('Geolocation error:', error);
+                    
+                    // Try IP-based geolocation as fallback
+                    statusEl.textContent = 'Browser location failed. Trying IP-based detection...';
+                    
+                    const ipSuccess = await tryIpGeolocation(statusEl);
+                    if (!ipSuccess) {
+                        statusEl.className = 'location-status error';
+                        
+                        switch (error.code) {
+                            case error.PERMISSION_DENIED:
+                                statusEl.textContent = 'Location access denied. Please enter manually.';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                statusEl.textContent = 'Location unavailable. Please enter manually.';
+                                break;
+                            case error.TIMEOUT:
+                                statusEl.textContent = 'Location request timed out. Please enter manually.';
+                                break;
+                            default:
+                                statusEl.textContent = 'Could not get location. Please enter manually.';
+                        }
+                        showManualInput();
+                    }
+                },
+                {
+                    enableHighAccuracy: false,
+                    timeout: 10000,
+                    maximumAge: 300000 // 5 minutes cache
+                }
+            );
+        }
+        
+        // Form submission
+        document.getElementById('editForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Hide previous messages
+            successMessage.style.display = 'none';
+            errorMessage.style.display = 'none';
+            
+            // Check if at least one tag is selected
+            const tagInputs = document.querySelectorAll('input[name="tags"]:checked');
+            if (tagInputs.length === 0) {
+                errorMessage.textContent = 'Please select at least one interest tag';
+                errorMessage.style.display = 'block';
+                return;
+            }
+            
+            // Check location
+            const locationCity = document.getElementById('locationCity').value;
+            const locationCountry = document.getElementById('locationCountry').value;
+            if (!locationCity || !locationCountry) {
+                errorMessage.textContent = 'Please provide your location';
+                errorMessage.style.display = 'block';
+                return;
+            }
+            
+            // Collect form data
+            const formData = new FormData(this);
+            const data = {
+                first_name: formData.get('first_name'),
+                name: formData.get('name'),
+                gender: formData.get('gender'),
+                sexual_preference: formData.get('sexual_preference'),
+                biography: formData.get('biography'),
+                tags: Array.from(tagInputs).map(input => parseInt(input.value)),
+                location_city: locationCity,
+                location_country: locationCountry
+            };
+            
+            try {
+                const response = await fetch('/profile/update', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    successMessage.style.display = 'block';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    
+                    // Redirect to dashboard after a short delay
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1500);
+                } else {
+                    const errorText = await response.text();
+                    errorMessage.textContent = errorText || 'Failed to update profile';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                errorMessage.textContent = 'An error occurred. Please try again.';
+                errorMessage.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
