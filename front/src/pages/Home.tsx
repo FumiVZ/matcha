@@ -1,5 +1,6 @@
-import { Link } from 'react-router-dom';
+import { data, Link } from 'react-router-dom';
 import '../styles/common.css';
+import {notify} from '../notifications/notifications';
 
 export default function Home() {
   return (
@@ -13,6 +14,7 @@ export default function Home() {
         </nav>
         <div>
           <Link to="/auth" className="auth-button">Login / Sign Up</Link>
+          <button onClick={() => notify("Notification", "info")}>Notify!</button>
         </div>
       </header>
 

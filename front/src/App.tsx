@@ -7,7 +7,7 @@ import Dashboard from './pages/Dashboard';
 import ProfileSetup from './pages/ProfileSetup';
 import NotFound from './pages/NotFound';
 import './App.css';
-
+import { ToastContainer } from 'react-toastify';
 function App() {
   return (
     <Router>
@@ -19,6 +19,7 @@ function App() {
             The HTML pages I converted HAVE headers with Nav. Ideally I should extract Layout.
             But the request was just to convert pages.
         */}
+        <ToastContainer />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
