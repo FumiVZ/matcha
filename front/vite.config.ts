@@ -5,33 +5,32 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    port: 5173,
     proxy: {
       '/auth': {
         target: 'http://localhost:3000',
         changeOrigin: true,
-        bypass: (req) => {
-          if (req.headers.accept?.includes('text/html')) {
-            return req.url
-          }
-        },
+        secure: false,
       },
       '/profile': {
         target: 'http://localhost:3000',
         changeOrigin: true,
-        bypass: (req) => {
-            if (req.headers.accept?.includes('text/html')) {
-              return req.url
-            }
-        },
+        secure: false,
       },
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+        secure: false,
       },
       '/uploads': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+        secure: false,
       }
     }
+  },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
   }
 })

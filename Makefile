@@ -1,11 +1,13 @@
 DOCKER_COMPOSE := $(shell docker compose version > /dev/null 2>&1 && echo "docker compose" || echo "docker-compose")
 
-all: docker-db init-db
-	@echo "Starting production server..."
+all: docker-db init-db build-front
+	@echo "Starting production server on http://localhost:3000 ..."
 	node server.js
 
 dev: docker-db init-db
 	@echo "Starting development servers (Back & Front)..."
+	@echo "Backend: http://localhost:3000"
+	@echo "Frontend: http://localhost:5173"
 	@npx concurrently -n "BACK,FRONT" -c "blue,magenta" \
 		"npx nodemon server.js" \
 		"cd front && npm run dev"
@@ -81,15 +83,17 @@ docker-clean:
 docker-restart: docker-down docker-up
 
 front:
-	@echo "Starting frontend server..."
+	@echo "Starting frontend dev server on http://localhost:5173 ..."
 	cd front && npm run dev
 
 build-front:
-	@echo "Building frontend..."
+	@echo "Building frontend for production..."
 	cd front && npm run build
+	@echo "Frontend built successfully in front/dist/"
 
 install-front:
 	@echo "Installing frontend dependencies..."
 	cd front && npm install
 
-.PHONY: all dev init-db clean-db clean re rdev docker-up docker-down docker-build docker-logs docker-db docker-clean docker-restart generate-db-password setup front install-front
+.PHONY: all dev init-db clean-db clean re rdev docker-up docker-down docker-build docker-logs docker-db docker-clean docker-restart generate-db-password setup front build-front install-front
+

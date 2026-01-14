@@ -12,6 +12,7 @@ if (missingVars.length > 0) {
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
 const pool = require('./config/db');
 const logger = require('./events/logger');
 const authRoutes = require('./routes/auth.routes');
@@ -19,9 +20,11 @@ const profileRoutes = require('./routes/profile.routes');
 const sessionConfig = require('./config/session');
 const isAuthenticated = require('./middlewares/isAuthenticated');
 const isProfileComplete = require('./middlewares/isProfileComplete');
+const { initNotificationService } = require('./services/notification.service');
 
 const app = express();
 const PORT = 3000;
+const server = http.createServer(app);
 
 // HTML escape function to prevent XSS
 const escapeHtml = (str) => {
@@ -89,14 +92,24 @@ app.use(express.static(path.join(__dirname, 'front/dist')));
 
 // Handle React routing - this must be LAST, after all API routes
 app.get('*', (req, res) => {
-    // Only serve index.html for non-API routes
-    if (!req.path.startsWith('/auth') && !req.path.startsWith('/profile') && !req.path.startsWith('/uploads')) {
-        res.sendFile(path.join(__dirname, 'front/dist', 'index.html'));
-    } else {
-        res.status(404).send('API endpoint not found');
+    // Check if the dist folder has an index.html (production mode)
+    const indexPath = path.join(__dirname, 'front/dist', 'index.html');
+    
+    if (fs.existsSync(indexPath)) {
+        // Production: serve the built React app
+        if (!req.path.startsWith('/auth') && !req.path.startsWith('/profile') && !req.path.startsWith('/uploads')) {
+            return res.sendFile(indexPath);
+        }
     }
+    
+    // If no built app exists or API route, return 404
+    res.status(404).send('Not found. In development mode, run the React dev server with: npm run dev:front');
 });
+
+const wss = initNotificationService(server, sessionConfig.store);
+
 // Lancement du serveur
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}`);
+    console.log(`WebSocket server ready on ws://localhost:${PORT}`);
 });

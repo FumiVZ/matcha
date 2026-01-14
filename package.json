@@ -5,7 +5,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "dev": "node server.js",
+    "dev": "concurrently \"npm run dev\" \"npm run dev:front\"",
+    "dev:front": "cd front && npm run dev",
+    "build": "cd front && npm run build",
     "clean:db": "node scripts/cleanDb.js"
   },
   "keywords": [],
