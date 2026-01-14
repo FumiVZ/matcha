@@ -8,7 +8,11 @@ import ProfileSetup from './pages/ProfileSetup';
 import NotFound from './pages/NotFound';
 import './App.css';
 import { ToastContainer } from 'react-toastify';
+import { useWebSocket } from './hooks/useWebSocket';
+
 function App() {
+  useWebSocket();
+
   return (
     <Router>
       <div className="App">

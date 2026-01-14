@@ -5,7 +5,7 @@ type CustomNotificationProps = ToastContentProps<{
   content: string;
 }>;
 
-export function MessageToast({ closeToast, data, toastProps }: CustomNotificationProps) {
+export function MessageToast({ closeToast, data }: CustomNotificationProps) {
     return (
         <div style={{
             backgroundColor: '#C5D89D',
@@ -45,7 +45,7 @@ export function MessageToast({ closeToast, data, toastProps }: CustomNotificatio
     );
 }
 
-export function InfoToast({ closeToast, data }: CustomNotificationProps) {
+export function InfoToast({ data }: CustomNotificationProps) {
     return (
         <div style={{
             backgroundColor: '#F6F0D7',

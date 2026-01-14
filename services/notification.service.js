@@ -24,6 +24,14 @@ const initNotificationService = (server, sessionStore) => {
 					case 'ping':
 						ws.send(JSON.stringify({ type: 'pong' }));
 						break;
+                    case 'test_notification':
+                        // Self-test: send a notification back to the sender
+                        ws.send(JSON.stringify({
+                            type: 'notification',
+                            content: 'This is a test notification from the server!',
+                            timestamp: Date.now()
+                        }));
+                        break;
 					case 'message':
 						ws.send(JSON.stringify({ type: 'ack', received: true }));
                         if (data.to && data.content)

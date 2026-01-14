@@ -1,6 +1,9 @@
 const session = require('express-session');
 
-module.exports = session({
+const store = new session.MemoryStore();
+
+const sessionMiddleware = session({
+  store: store,
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
@@ -11,3 +14,8 @@ module.exports = session({
     maxAge: 1000 * 60 * 60
   }
 });
+
+// Attach store to middleware to access it in server.js
+sessionMiddleware.store = store;
+
+module.exports = sessionMiddleware;
