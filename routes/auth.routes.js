@@ -5,6 +5,9 @@ const pool = require('../config/db');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../config/mailer');
 const router = express.Router();
 
+// Development flag to skip email verification
+const SKIP_EMAIL_VERIFICATION = process.env.SKIP_EMAIL_VERIFICATION === 'true';
+
 // POST /auth/login
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
@@ -15,8 +18,8 @@ router.post('/login', async (req, res) => {
 
     const user = result.rows[0];
     if (user && await bcrypt.compare(password, user.password)) {
-        // Check if email is verified
-        if (!user.email_verified) {
+        // Check if email is verified (skip in development if flag is set)
+        if (!user.email_verified && !SKIP_EMAIL_VERIFICATION) {
             return res.status(403).send('Please verify your email before logging in. Check your inbox for the verification link.');
         }
         
@@ -38,6 +41,22 @@ router.post('/register', async (req, res) => {
     const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     try {
+        // If skipping email verification, auto-verify the user
+        if (SKIP_EMAIL_VERIFICATION) {
+            const result = await pool.query(
+                `INSERT INTO users (email, password, email_verified) 
+                 VALUES ($1, $2, TRUE) RETURNING id`,
+                [email, hashedPassword]
+            );
+            
+            console.log('[DEV] Email verification skipped for:', email);
+            
+            // Auto-login the user
+            req.session.userId = result.rows[0].id;
+            req.session.email = email;
+            return res.redirect('/auth/verification-success');
+        }
+
         await pool.query(
             `INSERT INTO users (email, password, verification_token, verification_token_expires) 
              VALUES ($1, $2, $3, $4) RETURNING id`,

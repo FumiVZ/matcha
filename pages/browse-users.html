@@ -208,7 +208,7 @@
                 }
                 
                 const genderMap = { 'male': 'Male', 'female': 'Female', 'other': 'Other' };
-                const prefMap = { 'male': 'Men', 'female': 'Women', 'both': 'Everyone' };
+                const prefMap = { 'male': 'Men', 'female': 'Women', 'other': 'Other' };
                 
                 const usersHtml = users.map(user => {
                     const displayName = [user.first_name, user.name].filter(Boolean).join(' ') || `User #${user.id}`;

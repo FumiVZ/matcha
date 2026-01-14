@@ -77,7 +77,25 @@
         
         .profile-email {
             color: #666;
+            margin-bottom: 0.5rem;
+        }
+        
+        .popularity-score {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.8rem;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #333;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
             margin-bottom: 1rem;
+        }
+        
+        .popularity-score::before {
+            content: '★';
+            font-size: 1rem;
         }
         
         .profile-details {
@@ -239,6 +257,135 @@
             font-style: italic;
         }
         
+        .likes-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background-color: #fce4ec;
+            border-radius: 8px;
+            border-left: 4px solid #e91e63;
+        }
+        
+        .likes-section h2 {
+            font-size: 1rem;
+            color: #555;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .likes-count {
+            background-color: #e91e63;
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+        
+        .matches-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background-color: #e8f5e9;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .matches-section h2 {
+            font-size: 1rem;
+            color: #555;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .matches-count {
+            background-color: #4CAF50;
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+        
+        .likes-list, .matches-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .like-card, .match-card {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem 0.5rem 0.5rem;
+            background-color: white;
+            border-radius: 25px;
+            text-decoration: none;
+            color: inherit;
+            transition: box-shadow 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .like-card:hover, .match-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        
+        .match-card {
+            border: 2px solid #4CAF50;
+        }
+        
+        .like-photo, .match-photo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .like-photo-placeholder, .match-photo-placeholder {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 1rem;
+        }
+        
+        .like-info, .match-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .like-name, .match-name {
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #333;
+        }
+        
+        .like-time, .match-time {
+            font-size: 0.75rem;
+            color: #888;
+        }
+        
+        .no-likes, .no-matches {
+            color: #888;
+            font-style: italic;
+        }
+        
+        .view-all-link {
+            display: inline-block;
+            margin-top: 1rem;
+            color: #2196F3;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        
+        .view-all-link:hover {
+            text-decoration: underline;
+        }
+        
         .actions {
             display: flex;
             gap: 1rem;
@@ -311,6 +458,7 @@
             <div class="profile-info">
                 <div class="profile-name" id="profileName"></div>
                 <div class="profile-email"><%= email %></div>
+                <div class="popularity-score">Fame Rating: <%= popularityScore %></div>
                 
                 <div class="profile-details">
                     <span class="detail-label">Gender:</span>
@@ -342,6 +490,22 @@
             </div>
         </div>
         
+        <div class="matches-section">
+            <h2>My Matches <span class="matches-count" id="matchesCount">0</span></h2>
+            <div class="matches-list" id="matchesList">
+                <span class="no-matches">Loading...</span>
+            </div>
+            <a href="/matches" class="view-all-link">View all connections →</a>
+        </div>
+        
+        <div class="likes-section">
+            <h2>Who Liked Me <span class="likes-count" id="likesCount">0</span></h2>
+            <div class="likes-list" id="likesList">
+                <span class="no-likes">Loading...</span>
+            </div>
+            <a href="/matches" class="view-all-link">View all likes →</a>
+        </div>
+        
         <div class="actions">
             <a href="/users/browse" class="edit-button" style="background-color: #4CAF50;">Browse Users</a>
             <a href="/profile/edit" class="edit-button">Edit Profile</a>
@@ -361,7 +525,6 @@
         const tags = <%= tags %>;
         const locationCity = '<%= locationCity %>';
         const locationCountry = '<%= locationCountry %>';
-        
         // Display profile photo or placeholder
         const photoContainer = document.getElementById('photoContainer');
         if (profilePhoto) {
@@ -385,7 +548,7 @@
         
         // Format and display preference
         const preferenceValue = document.getElementById('preferenceValue');
-        const prefMap = { 'male': 'Male', 'female': 'Female', 'both': 'Both' };
+        const prefMap = { 'male': 'Male', 'female': 'Female', 'other': 'Other' };
         preferenceValue.textContent = prefMap[sexualPreference] || sexualPreference || 'Not specified';
         
         // Display location
@@ -449,7 +612,7 @@
         function getTimeAgo(date) {
             const seconds = Math.floor((new Date() - date) / 1000);
             
-            if (seconds < 60) return 'Just now';
+            if (seconds < 60) return `${seconds}s ago`;
             if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
             if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
             if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
@@ -458,6 +621,94 @@
         
         // Load viewers on page load
         loadViewers();
+        
+        // Fetch and display users who liked me
+        async function loadLikes() {
+            const likesList = document.getElementById('likesList');
+            const likesCount = document.getElementById('likesCount');
+            
+            try {
+                const response = await fetch('/likes/received');
+                const likes = await response.json();
+                
+                likesCount.textContent = likes.length;
+                
+                if (likes.length === 0) {
+                    likesList.innerHTML = '<span class="no-likes">No one has liked your profile yet</span>';
+                    return;
+                }
+                
+                // Show only first 5
+                const displayLikes = likes.slice(0, 5);
+                
+                likesList.innerHTML = displayLikes.map(like => {
+                    const name = [like.first_name, like.name].filter(Boolean).join(' ') || `User #${like.id}`;
+                    const photoHtml = like.profile_photo
+                        ? `<img src="/uploads/photos/${like.profile_photo}" alt="${name}" class="like-photo">`
+                        : `<div class="like-photo-placeholder">?</div>`;
+                    const timeAgo = getTimeAgo(new Date(like.created_at));
+                    
+                    return `
+                        <a href="/users/profile/${like.id}" class="like-card">
+                            ${photoHtml}
+                            <div class="like-info">
+                                <span class="like-name">${name}</span>
+                                <span class="like-time">${timeAgo}</span>
+                            </div>
+                        </a>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading likes:', error);
+                likesList.innerHTML = '<span class="no-likes">Failed to load likes</span>';
+            }
+        }
+        
+        // Fetch and display matches
+        async function loadMatches() {
+            const matchesList = document.getElementById('matchesList');
+            const matchesCount = document.getElementById('matchesCount');
+            
+            try {
+                const response = await fetch('/likes/matches');
+                const matches = await response.json();
+                
+                matchesCount.textContent = matches.length;
+                
+                if (matches.length === 0) {
+                    matchesList.innerHTML = '<span class="no-matches">No matches yet - like someone who likes you back!</span>';
+                    return;
+                }
+                
+                // Show only first 5
+                const displayMatches = matches.slice(0, 5);
+                
+                matchesList.innerHTML = displayMatches.map(match => {
+                    const name = [match.first_name, match.name].filter(Boolean).join(' ') || `User #${match.id}`;
+                    const photoHtml = match.profile_photo
+                        ? `<img src="/uploads/photos/${match.profile_photo}" alt="${name}" class="match-photo">`
+                        : `<div class="match-photo-placeholder">?</div>`;
+                    const timeAgo = getTimeAgo(new Date(match.matched_at));
+                    
+                    return `
+                        <a href="/users/profile/${match.id}" class="match-card">
+                            ${photoHtml}
+                            <div class="match-info">
+                                <span class="match-name">${name}</span>
+                                <span class="match-time">${timeAgo}</span>
+                            </div>
+                        </a>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading matches:', error);
+                matchesList.innerHTML = '<span class="no-matches">Failed to load matches</span>';
+            }
+        }
+        
+        // Load likes and matches on page load
+        loadLikes();
+        loadMatches();
     </script>
 </body>
 </html>

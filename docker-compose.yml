@@ -33,10 +33,25 @@ services:
       DB_HOST: db
       DB_PORT: 5432
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
-    ports:
-      - "${APP_PORT:-3000}:3000"
+      NODE_ENV: ${NODE_ENV:-production}
+      SKIP_EMAIL_VERIFICATION: ${SKIP_EMAIL_VERIFICATION:-false}
+    expose:
+      - "3000"
     volumes:
       - ./uploads:/app/uploads
+
+  nginx:
+    image: nginx:alpine
+    container_name: matcha_nginx
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
 
 volumes:
   postgres_data:

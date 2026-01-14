@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Matches - Matcha</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 1rem;
+            background-color: #f5f5f5;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            color: #333;
+            margin: 0;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .nav-link {
+            padding: 0.7rem 1.5rem;
+            background-color: #666;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        
+        .nav-link:hover {
+            background-color: #555;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 1rem;
+            color: #666;
+            transition: all 0.2s;
+        }
+        
+        .tab-btn:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .tab-btn.active {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .tab-count {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            background-color: rgba(0,0,0,0.1);
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-left: 0.5rem;
+        }
+        
+        .tab-btn.active .tab-count {
+            background-color: rgba(255,255,255,0.3);
+        }
+        
+        .users-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .user-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+        
+        .user-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        
+        .user-card a {
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .match-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            z-index: 10;
+        }
+        
+        .liked-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            color: white;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            z-index: 10;
+        }
+        
+        .card-photo {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background-color: #e0e0e0;
+        }
+        
+        .card-photo-placeholder {
+            width: 100%;
+            height: 200px;
+            background-color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 4rem;
+        }
+        
+        .card-content {
+            padding: 1.25rem;
+        }
+        
+        .card-name {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .card-date {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 0.5rem;
+        }
+        
+        .view-profile-btn {
+            display: block;
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #2196F3;
+            color: white;
+            text-align: center;
+            border: none;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .view-profile-btn:hover {
+            background-color: #1976D2;
+        }
+        
+        .chat-btn {
+            display: block;
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            text-align: center;
+            border: none;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        
+        .chat-btn:hover {
+            opacity: 0.9;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+        
+        .no-users {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+            background: white;
+            border-radius: 8px;
+        }
+        
+        .no-users h2 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .no-users p {
+            margin: 0;
+        }
+        
+        .error-message {
+            text-align: center;
+            padding: 2rem;
+            background-color: #ffebee;
+            color: #c62828;
+            border-radius: 8px;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @media (max-width: 600px) {
+            .page-header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1>My Connections</h1>
+        <div class="nav-links">
+            <a href="/users/browse" class="nav-link">Browse Users</a>
+            <a href="/dashboard" class="nav-link">Dashboard</a>
+        </div>
+    </div>
+    
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="matches">
+            Matches <span class="tab-count" id="matchCount">0</span>
+        </button>
+        <button class="tab-btn" data-tab="received">
+            Liked Me <span class="tab-count" id="receivedCount">0</span>
+        </button>
+        <button class="tab-btn" data-tab="sent">
+            I Liked <span class="tab-count" id="sentCount">0</span>
+        </button>
+    </div>
+    
+    <div id="matchesTab" class="tab-content active">
+        <div class="loading">Loading matches...</div>
+    </div>
+    
+    <div id="receivedTab" class="tab-content">
+        <div class="loading">Loading...</div>
+    </div>
+    
+    <div id="sentTab" class="tab-content">
+        <div class="loading">Loading...</div>
+    </div>
+    
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update active tab button
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Show corresponding tab content
+                const tabName = btn.dataset.tab;
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(tabName + 'Tab').classList.add('active');
+            });
+        });
+        
+        function formatTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays < 7) return `${diffDays}d ago`;
+            return date.toLocaleDateString();
+        }
+        
+        function renderUserCard(user, type) {
+            const displayName = [user.first_name, user.name].filter(Boolean).join(' ') || `User #${user.id}`;
+            const photoHtml = user.profile_photo 
+                ? `<img src="/uploads/photos/${user.profile_photo}" alt="${displayName}" class="card-photo">`
+                : `<div class="card-photo-placeholder">?</div>`;
+            
+            let badgeHtml = '';
+            let dateText = '';
+            let actionBtn = '';
+            
+            if (type === 'match') {
+                badgeHtml = '<span class="match-badge">Match</span>';
+                dateText = `Matched ${formatTimeAgo(user.matched_at)}`;
+                actionBtn = `
+                    <a href="/users/profile/${user.id}" class="view-profile-btn">View Profile</a>
+                `;
+            } else if (type === 'received') {
+                badgeHtml = '<span class="liked-badge">Likes You</span>';
+                dateText = `Liked ${formatTimeAgo(user.created_at)}`;
+                actionBtn = `<a href="/users/profile/${user.id}" class="view-profile-btn">View Profile</a>`;
+            } else {
+                dateText = `Liked ${formatTimeAgo(user.created_at)}`;
+                actionBtn = `<a href="/users/profile/${user.id}" class="view-profile-btn">View Profile</a>`;
+            }
+            
+            return `
+                <div class="user-card">
+                    ${badgeHtml}
+                    <a href="/users/profile/${user.id}">
+                        ${photoHtml}
+                        <div class="card-content">
+                            <div class="card-name">${displayName}</div>
+                            <div class="card-date">${dateText}</div>
+                        </div>
+                    </a>
+                    ${actionBtn}
+                </div>
+            `;
+        }
+        
+        async function loadMatches() {
+            const container = document.getElementById('matchesTab');
+            try {
+                const response = await fetch('/likes/matches');
+                if (!response.ok) throw new Error('Failed to fetch matches');
+                
+                const matches = await response.json();
+                document.getElementById('matchCount').textContent = matches.length;
+                
+                if (matches.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-users">
+                            <h2>No matches yet</h2>
+                            <p>When you and another user both like each other, you'll see them here!</p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="users-grid">
+                            ${matches.map(m => renderUserCard(m, 'match')).join('')}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading matches:', error);
+                container.innerHTML = '<div class="error-message">Failed to load matches</div>';
+            }
+        }
+        
+        async function loadReceivedLikes() {
+            const container = document.getElementById('receivedTab');
+            try {
+                const response = await fetch('/likes/received');
+                if (!response.ok) throw new Error('Failed to fetch likes');
+                
+                const likes = await response.json();
+                document.getElementById('receivedCount').textContent = likes.length;
+                
+                if (likes.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-users">
+                            <h2>No likes yet</h2>
+                            <p>When someone likes your profile, you'll see them here!</p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="users-grid">
+                            ${likes.map(l => renderUserCard(l, 'received')).join('')}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading likes:', error);
+                container.innerHTML = '<div class="error-message">Failed to load likes</div>';
+            }
+        }
+        
+        async function loadSentLikes() {
+            const container = document.getElementById('sentTab');
+            try {
+                const response = await fetch('/likes/sent');
+                if (!response.ok) throw new Error('Failed to fetch sent likes');
+                
+                const likes = await response.json();
+                document.getElementById('sentCount').textContent = likes.length;
+                
+                if (likes.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-users">
+                            <h2>You haven't liked anyone yet</h2>
+                            <p>Browse profiles and like someone to see them here!</p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="users-grid">
+                            ${likes.map(l => renderUserCard(l, 'sent')).join('')}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading sent likes:', error);
+                container.innerHTML = '<div class="error-message">Failed to load sent likes</div>';
+            }
+        }
+        
+        // Load all data on page load
+        loadMatches();
+        loadReceivedLikes();
+        loadSentLikes();
+    </script>
+</body>
+</html>

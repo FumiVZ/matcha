@@ -271,12 +271,19 @@
             font-size: 0.9rem;
         }
         
-        .location-row input {
+        .location-row input,
+        .location-row select {
             width: 100%;
             padding: 0.6rem;
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 0.95rem;
+        }
+        
+        .location-row input:focus,
+        .location-row select:focus {
+            outline: none;
+            border-color: #2196F3;
         }
         
         .location-buttons {
@@ -365,6 +372,64 @@
                 flex-direction: column;
             }
         }
+        
+        /* City Autocomplete Styles */
+        .autocomplete-wrapper {
+            position: relative;
+        }
+        
+        .autocomplete-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .autocomplete-results.visible {
+            display: block;
+        }
+        
+        .autocomplete-item {
+            padding: 0.6rem 0.8rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9rem;
+        }
+        
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        
+        .autocomplete-item:hover,
+        .autocomplete-item.selected {
+            background-color: #e3f2fd;
+        }
+        
+        .autocomplete-item .city-name {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .autocomplete-item .city-details {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .autocomplete-loading {
+            padding: 0.6rem;
+            text-align: center;
+            color: #888;
+            font-size: 0.85rem;
+        }
     </style>
 </head>
 <body>
@@ -424,8 +489,8 @@
                         <span>Women</span>
                     </label>
                     <label class="radio-label">
-                        <input type="radio" name="sexual_preference" value="both" required>
-                        <span>Both</span>
+                        <input type="radio" name="sexual_preference" value="other" required>
+                        <span>Other</span>
                     </label>
                 </div>
             </div>
@@ -471,14 +536,24 @@
                     
                     <div class="location-row" id="manualInputRow" style="display: none;">
                         <div class="form-group">
-                            <label for="locationCity">City</label>
-                            <input type="text" id="locationCity" name="location_city" value="<%= locationCity %>" placeholder="e.g., Paris">
+                            <label for="locationCountryInput">Country</label>
+                            <div class="autocomplete-wrapper">
+                                <input type="text" id="locationCountryInput" value="<%= locationCountry %>" placeholder="Type your country..." autocomplete="off">
+                                <div class="autocomplete-results" id="countryAutocomplete"></div>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label for="locationCountry">Country</label>
-                            <input type="text" id="locationCountry" name="location_country" value="<%= locationCountry %>" placeholder="e.g., France">
+                            <label for="locationCity">City</label>
+                            <div class="autocomplete-wrapper">
+                                <input type="text" id="locationCity" name="location_city" value="<%= locationCity %>" placeholder="Type your city..." autocomplete="off">
+                                <div class="autocomplete-results" id="cityAutocomplete"></div>
+                            </div>
                         </div>
                     </div>
+                    
+                    <!-- Hidden fields for coordinates -->
+                    <input type="hidden" id="locationLatitude" name="location_latitude">
+                    <input type="hidden" id="locationLongitude" name="location_longitude">
                     
                     <p class="rgpd-notice">
                         In accordance with GDPR/RGPD, your location data is only used to show you relevant matches. 
@@ -532,37 +607,6 @@
             document.getElementById('locationStatus').textContent = '';
         }
         
-        // IP-based geolocation fallback (RGPD compliant - processed server-side)
-        async function tryIpGeolocation(statusEl) {
-            try {
-                // Use our server-side endpoint (IP never leaves our server)
-                const response = await fetch('/profile/api/ip-geolocation');
-                
-                if (!response.ok) {
-                    return false;
-                }
-                
-                const data = await response.json();
-                
-                if (data.city && data.country) {
-                    // Update form fields
-                    document.getElementById('locationCity').value = data.city;
-                    document.getElementById('locationCountry').value = data.country;
-                    
-                    // Show success
-                    statusEl.className = 'location-status success';
-                    statusEl.textContent = `Location detected: ${data.city}, ${data.country}`;
-                    
-                    // Show manual input row so user can verify/edit
-                    document.getElementById('manualInputRow').style.display = 'flex';
-                    return true;
-                }
-            } catch (error) {
-                console.error('IP geolocation error:', error);
-            }
-            return false;
-        }
-        
         async function requestGeolocation() {
             const statusEl = document.getElementById('locationStatus');
             statusEl.className = 'location-status';
@@ -592,13 +636,21 @@
                         
                         const data = await response.json();
                         
+                        // Display suburb + city if suburb is available (precision "jusqu'au quartier")
+                        const displayLocation = data.suburb 
+                            ? `${data.suburb}, ${data.city}` 
+                            : (data.city || '');
+                        
                         // Update form fields
-                        document.getElementById('locationCity').value = data.city || '';
-                        document.getElementById('locationCountry').value = data.country || '';
+                        document.getElementById('locationCity').value = displayLocation;
+                        document.getElementById('locationCountryInput').value = data.country || '';
+                        // Store GPS coordinates
+                        document.getElementById('locationLatitude').value = latitude;
+                        document.getElementById('locationLongitude').value = longitude;
                         
                         // Show success
                         statusEl.className = 'location-status success';
-                        statusEl.textContent = `Location detected: ${data.city}, ${data.country}`;
+                        statusEl.textContent = `Location detected: ${displayLocation}, ${data.country}`;
                         
                         // Show manual input row so user can verify/edit
                         document.getElementById('manualInputRow').style.display = 'flex';
@@ -610,35 +662,28 @@
                         showManualInput();
                     }
                 },
-                async (error) => {
+                (error) => {
                     console.error('Geolocation error:', error);
+                    statusEl.className = 'location-status error';
                     
-                    // Try IP-based geolocation as fallback
-                    statusEl.textContent = 'Browser location failed. Trying IP-based detection...';
-                    
-                    const ipSuccess = await tryIpGeolocation(statusEl);
-                    if (!ipSuccess) {
-                        statusEl.className = 'location-status error';
-                        
-                        switch (error.code) {
-                            case error.PERMISSION_DENIED:
-                                statusEl.textContent = 'Location access denied. Please enter manually.';
-                                break;
-                            case error.POSITION_UNAVAILABLE:
-                                statusEl.textContent = 'Location unavailable. Please enter manually.';
-                                break;
-                            case error.TIMEOUT:
-                                statusEl.textContent = 'Location request timed out. Please enter manually.';
-                                break;
-                            default:
-                                statusEl.textContent = 'Could not get location. Please enter manually.';
-                        }
-                        showManualInput();
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            statusEl.textContent = 'Location access denied. Please enter manually.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            statusEl.textContent = 'Location unavailable. Please enter manually.';
+                            break;
+                        case error.TIMEOUT:
+                            statusEl.textContent = 'Location request timed out. Please enter manually.';
+                            break;
+                        default:
+                            statusEl.textContent = 'Could not get location. Please enter manually.';
                     }
+                    showManualInput();
                 },
                 {
                     enableHighAccuracy: false,
-                    timeout: 10000,
+                    timeout: 30000, // 30 seconds for slower connections
                     maximumAge: 300000 // 5 minutes cache
                 }
             );
@@ -665,8 +710,8 @@
             
             // Check location
             const locationCity = document.getElementById('locationCity').value;
-            const locationCountry = document.getElementById('locationCountry').value;
-            if (!locationCity || !locationCountry) {
+            const locationCountryInput = document.getElementById('locationCountryInput').value;
+            if (!locationCity || !locationCountryInput) {
                 errorMessage.textContent = 'Please provide your location';
                 errorMessage.style.display = 'block';
                 return;
@@ -682,7 +727,9 @@
                 biography: formData.get('biography'),
                 tags: Array.from(tagInputs).map(input => parseInt(input.value)),
                 location_city: locationCity,
-                location_country: locationCountry
+                location_country: locationCountryInput,
+                location_latitude: document.getElementById('locationLatitude').value || null,
+                location_longitude: document.getElementById('locationLongitude').value || null
             };
             
             try {
@@ -713,6 +760,231 @@
                 errorMessage.style.display = 'block';
             }
         });
+        
+        // Country and City Autocomplete functionality
+        (function() {
+            const countryInput = document.getElementById('locationCountryInput');
+            const countryAutocomplete = document.getElementById('countryAutocomplete');
+            const cityInput = document.getElementById('locationCity');
+            const cityAutocomplete = document.getElementById('cityAutocomplete');
+            
+            let countryDebounce = null;
+            let cityDebounce = null;
+            let selectedCountryIndex = -1;
+            let selectedCityIndex = -1;
+            let countrySuggestions = [];
+            let citySuggestions = [];
+            let selectedCountryName = countryInput.value || '';
+            
+            // ===== COUNTRY AUTOCOMPLETE =====
+            function searchCountries(query) {
+                if (countryDebounce) clearTimeout(countryDebounce);
+                
+                if (query.length < 1) {
+                    hideCountryAutocomplete();
+                    return;
+                }
+                
+                countryAutocomplete.innerHTML = '<div class="autocomplete-loading">Searching...</div>';
+                countryAutocomplete.classList.add('visible');
+                
+                countryDebounce = setTimeout(async () => {
+                    try {
+                        const response = await fetch(`/profile/api/country-autocomplete?q=${encodeURIComponent(query)}`);
+                        const suggestions = await response.json();
+                        
+                        countrySuggestions = suggestions;
+                        selectedCountryIndex = -1;
+                        
+                        if (suggestions.length === 0) {
+                            countryAutocomplete.innerHTML = '<div class="autocomplete-loading">No countries found</div>';
+                            return;
+                        }
+                        
+                        countryAutocomplete.innerHTML = suggestions.map((item, index) => `
+                            <div class="autocomplete-item" data-index="${index}">
+                                <span class="city-name">${item.name}</span>
+                            </div>
+                        `).join('');
+                        
+                    } catch (error) {
+                        console.error('Country autocomplete error:', error);
+                        countryAutocomplete.innerHTML = '<div class="autocomplete-loading">Error loading suggestions</div>';
+                    }
+                }, 200);
+            }
+            
+            function selectCountry(index) {
+                const country = countrySuggestions[index];
+                if (country) {
+                    countryInput.value = country.name;
+                    selectedCountryName = country.name;
+                    hideCountryAutocomplete();
+                    cityInput.focus();
+                }
+            }
+            
+            function hideCountryAutocomplete() {
+                countryAutocomplete.classList.remove('visible');
+                countryAutocomplete.innerHTML = '';
+                countrySuggestions = [];
+                selectedCountryIndex = -1;
+            }
+            
+            countryInput.addEventListener('input', (e) => {
+                // Reset country name if user types after selecting
+                if (selectedCountryName && e.target.value !== selectedCountryName) {
+                    selectedCountryName = '';
+                }
+                searchCountries(e.target.value);
+            });
+            
+            countryInput.addEventListener('keydown', (e) => {
+                const items = countryAutocomplete.querySelectorAll('.autocomplete-item');
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    selectedCountryIndex = Math.min(selectedCountryIndex + 1, items.length - 1);
+                    updateCountrySelection(items);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    selectedCountryIndex = Math.max(selectedCountryIndex - 1, 0);
+                    updateCountrySelection(items);
+                } else if (e.key === 'Enter' && selectedCountryIndex >= 0) {
+                    e.preventDefault();
+                    selectCountry(selectedCountryIndex);
+                } else if (e.key === 'Escape') {
+                    hideCountryAutocomplete();
+                }
+            });
+            
+            function updateCountrySelection(items) {
+                items.forEach((item, index) => {
+                    item.classList.toggle('selected', index === selectedCountryIndex);
+                });
+                if (selectedCountryIndex >= 0 && items[selectedCountryIndex]) {
+                    items[selectedCountryIndex].scrollIntoView({ block: 'nearest' });
+                }
+            }
+            
+            countryAutocomplete.addEventListener('click', (e) => {
+                const item = e.target.closest('.autocomplete-item');
+                if (item) {
+                    selectCountry(parseInt(item.dataset.index));
+                }
+            });
+            
+            // ===== CITY AUTOCOMPLETE =====
+            function searchCities(query) {
+                if (cityDebounce) clearTimeout(cityDebounce);
+                
+                if (query.length < 2) {
+                    hideCityAutocomplete();
+                    return;
+                }
+                
+                cityAutocomplete.innerHTML = '<div class="autocomplete-loading">Searching...</div>';
+                cityAutocomplete.classList.add('visible');
+                
+                cityDebounce = setTimeout(async () => {
+                    try {
+                        const countryNameParam = selectedCountryName || countryInput.value || '';
+                        const url = `/profile/api/city-autocomplete?q=${encodeURIComponent(query)}&countryName=${encodeURIComponent(countryNameParam)}`;
+                        const response = await fetch(url);
+                        const suggestions = await response.json();
+                        
+                        citySuggestions = suggestions;
+                        selectedCityIndex = -1;
+                        
+                        if (suggestions.length === 0) {
+                            cityAutocomplete.innerHTML = '<div class="autocomplete-loading">No cities found</div>';
+                            return;
+                        }
+                        
+                        cityAutocomplete.innerHTML = suggestions.map((item, index) => `
+                            <div class="autocomplete-item" data-index="${index}">
+                                <span class="city-name">${item.city}</span>
+                                <span class="city-details">${item.postcode || ''} ${item.country || ''}</span>
+                            </div>
+                        `).join('');
+                        
+                    } catch (error) {
+                        console.error('City autocomplete error:', error);
+                        cityAutocomplete.innerHTML = '<div class="autocomplete-loading">Error loading suggestions</div>';
+                    }
+                }, 300);
+            }
+            
+            function selectCity(index) {
+                const city = citySuggestions[index];
+                if (city) {
+                    cityInput.value = city.city;
+                    // Also update country if it came from city selection
+                    if (city.country && !selectedCountryName) {
+                        countryInput.value = city.country;
+                        selectedCountryName = city.country;
+                    }
+                    // Store coordinates for distance-based matching
+                    document.getElementById('locationLatitude').value = city.latitude || '';
+                    document.getElementById('locationLongitude').value = city.longitude || '';
+                    hideCityAutocomplete();
+                }
+            }
+            
+            function hideCityAutocomplete() {
+                cityAutocomplete.classList.remove('visible');
+                cityAutocomplete.innerHTML = '';
+                citySuggestions = [];
+                selectedCityIndex = -1;
+            }
+            
+            cityInput.addEventListener('input', (e) => {
+                searchCities(e.target.value);
+            });
+            
+            cityInput.addEventListener('keydown', (e) => {
+                const items = cityAutocomplete.querySelectorAll('.autocomplete-item');
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    selectedCityIndex = Math.min(selectedCityIndex + 1, items.length - 1);
+                    updateCitySelection(items);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    selectedCityIndex = Math.max(selectedCityIndex - 1, 0);
+                    updateCitySelection(items);
+                } else if (e.key === 'Enter' && selectedCityIndex >= 0) {
+                    e.preventDefault();
+                    selectCity(selectedCityIndex);
+                } else if (e.key === 'Escape') {
+                    hideCityAutocomplete();
+                }
+            });
+            
+            function updateCitySelection(items) {
+                items.forEach((item, index) => {
+                    item.classList.toggle('selected', index === selectedCityIndex);
+                });
+                if (selectedCityIndex >= 0 && items[selectedCityIndex]) {
+                    items[selectedCityIndex].scrollIntoView({ block: 'nearest' });
+                }
+            }
+            
+            cityAutocomplete.addEventListener('click', (e) => {
+                const item = e.target.closest('.autocomplete-item');
+                if (item) {
+                    selectCity(parseInt(item.dataset.index));
+                }
+            });
+            
+            // Hide autocomplete on click outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.autocomplete-wrapper')) {
+                    hideCountryAutocomplete();
+                    hideCityAutocomplete();
+                }
+            });
+        })();
     </script>
 </body>
 </html>

@@ -16,6 +16,7 @@ const logger = require('./events/logger');
 const authRoutes = require('./routes/auth.routes');
 const profileRoutes = require('./routes/profile.routes');
 const usersRoutes = require('./routes/users.routes');
+const likesRoutes = require('./routes/likes.routes');
 const sessionConfig = require('./config/session');
 const isAuthenticated = require('./middlewares/isAuthenticated');
 const isProfileComplete = require('./middlewares/isProfileComplete');
@@ -39,6 +40,7 @@ app.use(sessionConfig);
 app.use('/auth', authRoutes);
 app.use('/profile', profileRoutes);
 app.use('/users', usersRoutes);
+app.use('/likes', likesRoutes);
 
 // Serve uploaded photos with security headers and authorization
 app.get('/uploads/photos/:filename', isAuthenticated, async (req, res) => {
@@ -102,15 +104,19 @@ app.get('/auth', (req, res) => {
     res.sendFile(path.join(__dirname, 'pages', 'auth.html'));
 });
 
+app.get('/matches', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'pages', 'matches.html'));
+});
+
 
 const pool = require('./config/db');
 
 app.get('/dashboard', isProfileComplete, async (req, res) => {
     try {
-        // Fetch user profile data including location
+        // Fetch user profile data including location and popularity score
         const userResult = await pool.query(
             `SELECT id, first_name, name, gender, sexual_preference, biography,
-                    location_city, location_country 
+                    location_city, location_country, popularity_score 
              FROM users WHERE id = $1`,
             [req.session.userId]
         );
@@ -156,7 +162,8 @@ app.get('/dashboard', isProfileComplete, async (req, res) => {
                 .replace('<%= profilePhoto %>', profilePhoto ? `/uploads/photos/${escapeHtml(profilePhoto)}` : '')
                 .replace('<%= tags %>', JSON.stringify(tags.map(tag => escapeHtml(tag))))
                 .replace('<%= locationCity %>', escapeHtml(user.location_city || ''))
-                .replace('<%= locationCountry %>', escapeHtml(user.location_country || ''));
+                .replace('<%= locationCountry %>', escapeHtml(user.location_country || ''))
+                .replace('<%= popularityScore %>', user.popularity_score || 1000);
             
             res.send(html);
         });

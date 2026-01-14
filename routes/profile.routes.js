@@ -242,9 +242,10 @@ router.get('/api/reverse-geocode', isAuthenticated, async (req, res) => {
     
     try {
         // Use OpenStreetMap Nominatim for reverse geocoding (free, no API key required)
+        // zoom=18 for maximum precision (building level)
         // Nominatim usage policy: https://operations.osmfoundation.org/policies/nominatim/
         const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`,
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`,
             {
                 headers: {
                     'User-Agent': 'Matcha-App/1.0' // Required by Nominatim
@@ -258,61 +259,165 @@ router.get('/api/reverse-geocode', isAuthenticated, async (req, res) => {
         
         const data = await response.json();
         
-        // Extract city and country from response
+        // Extract location details from response
         const address = data.address || {};
-        const city = address.city || address.town || address.village || address.municipality || address.county || '';
-        const country = address.country || '';
         
-        res.json({ city, country });
+        // Get suburb/neighbourhood for precision "jusqu'au quartier"
+        const suburb = address.suburb || address.neighbourhood || address.quarter || address.district || '';
+        
+        // Get city (fallback through various address levels)
+        const city = address.city || address.town || address.village || address.municipality || '';
+        
+        // If no city found, try county as fallback
+        const cityFallback = city || address.county || '';
+        
+        const country = address.country || '';
+        const countryCode = address.country_code ? address.country_code.toUpperCase() : '';
+        
+        res.json({ 
+            city: cityFallback, 
+            suburb,
+            country, 
+            countryCode 
+        });
     } catch (error) {
         console.error('Reverse geocoding error:', error);
         res.status(500).json({ error: 'Could not determine location' });
     }
 });
 
-// GET /api/ip-geolocation - Server-side IP-based location detection (RGPD compliant)
-// The user's IP stays on our server, we only return city/country to the client
-router.get('/api/ip-geolocation', isAuthenticated, async (req, res) => {
+// GET /api/country-autocomplete - Search countries with autocomplete (using Photon/Komoot)
+router.get('/api/country-autocomplete', isAuthenticated, async (req, res) => {
     try {
-        // Get client IP from request
-        // Check X-Forwarded-For for proxied requests, fallback to direct IP
-        const forwarded = req.headers['x-forwarded-for'];
-        let clientIp = forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
+        const { q } = req.query;
         
-        // Handle IPv6 localhost
-        if (clientIp === '::1' || clientIp === '::ffff:127.0.0.1') {
-            clientIp = ''; // Will trigger ip-api to use the server's public IP
+        if (!q || q.length < 1) {
+            return res.json([]);
         }
         
-        // Remove IPv6 prefix if present
-        if (clientIp && clientIp.startsWith('::ffff:')) {
-            clientIp = clientIp.substring(7);
+        // Use Photon API to search for countries
+        // We search for the query and filter results that have country info
+        const apiUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lang=en&limit=20`;
+        
+        const response = await fetch(apiUrl, {
+            headers: {
+                'User-Agent': 'Matcha/1.0 (42 School Project)'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Photon API error');
         }
         
-        // Use ip-api.com for IP geolocation (free for non-commercial use, 45 req/min)
-        // RGPD note: IP is processed server-side, only city/country returned to client
-        const apiUrl = clientIp 
-            ? `http://ip-api.com/json/${clientIp}?fields=status,message,city,country,lat,lon`
-            : `http://ip-api.com/json/?fields=status,message,city,country,lat,lon`;
-            
-        const response = await fetch(apiUrl);
         const data = await response.json();
         
-        if (data.status === 'success' && data.city && data.country) {
-            // Only return location data, not the IP itself (RGPD compliant)
-            res.json({
-                city: data.city,
-                country: data.country,
-                latitude: data.lat,
-                longitude: data.lon
+        // Extract unique country names from results
+        const countrySet = new Set();
+        const countries = [];
+        
+        (data.features || []).forEach(item => {
+            const countryName = item.properties?.country;
+            if (countryName && !countrySet.has(countryName.toLowerCase())) {
+                // Check if country name starts with the query (case insensitive)
+                if (countryName.toLowerCase().startsWith(q.toLowerCase())) {
+                    countrySet.add(countryName.toLowerCase());
+                    countries.push({ name: countryName });
+                }
+            }
+        });
+        
+        // If no results from API, try a direct country search
+        // by searching for capital cities or major locations
+        if (countries.length === 0) {
+            // Search with "country" hint
+            const countryApiUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(q + ' country')}&lang=en&limit=10`;
+            const countryResponse = await fetch(countryApiUrl, {
+                headers: {
+                    'User-Agent': 'Matcha/1.0 (42 School Project)'
+                }
             });
-        } else {
-            console.error('IP geolocation failed:', data.message || 'Unknown error');
-            res.status(404).json({ error: 'Could not determine location from IP' });
+            
+            if (countryResponse.ok) {
+                const countryData = await countryResponse.json();
+                (countryData.features || []).forEach(item => {
+                    const countryName = item.properties?.country;
+                    if (countryName && !countrySet.has(countryName.toLowerCase())) {
+                        if (countryName.toLowerCase().startsWith(q.toLowerCase())) {
+                            countrySet.add(countryName.toLowerCase());
+                            countries.push({ name: countryName });
+                        }
+                    }
+                });
+            }
         }
+        
+        res.json(countries.slice(0, 5));
     } catch (error) {
-        console.error('IP geolocation error:', error);
-        res.status(500).json({ error: 'Location service unavailable' });
+        console.error('Country autocomplete error:', error);
+        res.status(500).json({ error: 'Autocomplete service unavailable' });
+    }
+});
+
+// GET /api/city-autocomplete - Search cities with autocomplete (using Photon/Komoot)
+// Returns city suggestions with coordinates for geo-search functionality
+router.get('/api/city-autocomplete', isAuthenticated, async (req, res) => {
+    try {
+        const { q, countryName } = req.query;
+        
+        if (!q || q.length < 2) {
+            return res.json([]);
+        }
+        
+        // Build Photon API URL with osm_tag filter to only get cities/towns/villages
+        let apiUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lang=en&limit=15`;
+        apiUrl += '&osm_tag=place:city&osm_tag=place:town&osm_tag=place:village';
+        
+        const response = await fetch(apiUrl, {
+            headers: {
+                'User-Agent': 'Matcha/1.0 (42 School Project)'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Photon API error');
+        }
+        
+        const data = await response.json();
+        
+        // Format and filter results
+        const suggestions = (data.features || [])
+            .filter(item => {
+                // If countryName is provided, filter by country
+                if (countryName) {
+                    const itemCountry = (item.properties?.country || '').toLowerCase();
+                    return itemCountry === countryName.toLowerCase();
+                }
+                return true;
+            })
+            .map(item => {
+                const props = item.properties || {};
+                const coords = item.geometry?.coordinates || [];
+                
+                return {
+                    city: props.name,
+                    country: props.country || '',
+                    state: props.state || '',
+                    postcode: props.postcode || '',
+                    latitude: coords[1],
+                    longitude: coords[0],
+                    display: props.state ? `${props.name}, ${props.state}` : props.name
+                };
+            })
+            // Remove duplicates
+            .filter((item, index, self) => 
+                index === self.findIndex(t => t.city.toLowerCase() === item.city.toLowerCase() && t.country === item.country)
+            )
+            .slice(0, 7);
+        
+        res.json(suggestions);
+    } catch (error) {
+        console.error('City autocomplete error:', error);
+        res.status(500).json({ error: 'Autocomplete service unavailable' });
     }
 });
 
@@ -391,7 +496,7 @@ router.get('/edit', isAuthenticated, async (req, res) => {
 
 // PUT /profile/update - Update profile data
 router.put('/update', isAuthenticated, async (req, res) => {
-    const { first_name, name, gender, sexual_preference, biography, tags, location_city, location_country } = req.body;
+    const { first_name, name, gender, sexual_preference, biography, tags, location_city, location_country, location_latitude, location_longitude } = req.body;
     const userId = req.session.userId;
 
     try {
@@ -410,13 +515,17 @@ router.put('/update', isAuthenticated, async (req, res) => {
             return res.status(400).send('Please provide your location');
         }
 
-        // Update user profile including location
+        // Update user profile including location and coordinates
         await pool.query(
             `UPDATE users 
              SET first_name = $1, name = $2, gender = $3, sexual_preference = $4, biography = $5,
-                 location_city = $6, location_country = $7 
-             WHERE id = $8`,
-            [first_name || null, name || null, gender, sexual_preference, biography, location_city, location_country, userId]
+                 location_city = $6, location_country = $7,
+                 location_latitude = $8, location_longitude = $9
+             WHERE id = $10`,
+            [first_name || null, name || null, gender, sexual_preference, biography, 
+             location_city, location_country, 
+             location_latitude || null, location_longitude || null,
+             userId]
         );
 
         // Update tags

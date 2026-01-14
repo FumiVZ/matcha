@@ -80,7 +80,7 @@ router.get('/profile/:id', isAuthenticated, async (req, res) => {
         // Fetch user data
         const userResult = await pool.query(
             `SELECT id, first_name, name, gender, sexual_preference, biography,
-                    location_city, location_country
+                    location_city, location_country, popularity_score
              FROM users 
              WHERE id = $1 AND profile_complete = true AND email_verified = true`,
             [userId]
@@ -147,6 +147,7 @@ router.get('/profile/:id', isAuthenticated, async (req, res) => {
                 .replace('<%= sexualPreference %>', escapeHtml(user.sexual_preference || ''))
                 .replace('<%= biography %>', escapeHtml(user.biography || ''))
                 .replace('<%= location %>', escapeHtml(location))
+                .replace('<%= popularityScore %>', user.popularity_score || 1000)
                 .replace('<%= profilePhoto %>', profilePhoto ? `/uploads/photos/${escapeHtml(profilePhoto)}` : '')
                 .replace('<%= photos %>', JSON.stringify(photos.map(p => `/uploads/photos/${p.file_path}`)))
                 .replace('<%= tags %>', JSON.stringify(tags.map(tag => escapeHtml(tag))));
