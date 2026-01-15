@@ -1,5 +1,6 @@
 const WebSocket = require('ws');
 const wsAuth = require('../middlewares/wsAuth');
+const pool = require('../config/db');
 
 const clientsByUserId = new Map();
 
@@ -75,13 +76,26 @@ const removeClient = (userId, ws) => {
 	}
 };
 
-const sendToUser = (userId, payload) => {
+const sendToUser = async (userId, payload) => {
 	const targets = clientsByUserId.get(userId);
-	if (!targets || targets.size === 0) return false;
-
 	const message = typeof payload === 'string' ? payload : JSON.stringify(payload);
-	let sent = false;
+	
+	// If user is not connected, save notification to database
+	if (!targets || targets.size === 0) {
+		try {
+			const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
+			await pool.query(
+				'INSERT INTO notifications (user_id, type, message) VALUES ($1, $2, $3)',
+				[userId, data.type || 'notification', data.content || JSON.stringify(data)]
+			);
+			console.log(`Notification saved to database for offline user ${userId}`);
+		} catch (error) {
+			console.error('Error saving notification to database:', error);
+		}
+		return false;
+	}
 
+	let sent = false;
 	targets.forEach((socket) => {
 		if (socket.readyState === WebSocket.OPEN) {
 			socket.send(message);
@@ -102,4 +116,18 @@ const forwardMessageToUser = (fromUserId, toUserId, content) => {
     return sendToUser(toUserId, payload);
 };
 
-module.exports = { initNotificationService, sendToUser };
+const deleteNotificationsByType = async (userId, type) => {
+	try {
+		const result = await pool.query(
+			'DELETE FROM notifications WHERE user_id = $1 AND type = $2',
+			[userId, type]
+		);
+		console.log(`Deleted ${result.rowCount} notification(s) of type '${type}' for user ${userId}`);
+		return result.rowCount;
+	} catch (error) {
+		console.error('Error deleting notifications:', error);
+		throw error;
+	}
+};
+
+module.exports = { initNotificationService, sendToUser, deleteNotificationsByType };

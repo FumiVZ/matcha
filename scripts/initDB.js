@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const bcrypt = require('bcrypt');
 
 const predefinedTags = [
     'Napping',
@@ -32,6 +33,9 @@ const predefinedTags = [
         await pool.query('DROP TABLE IF EXISTS user_photos;');
         console.log('Table user_photos dropped!');
         
+        await pool.query('DROP TABLE IF EXISTS notifications;');
+        console.log('Table notifications dropped!');
+        
         await pool.query('DROP TABLE IF EXISTS tags;');
         console.log('Table tags dropped!');
         
@@ -54,6 +58,18 @@ const predefinedTags = [
         `);
         console.log('Table users created with profile fields!');
         
+        // Create notifications table
+        await pool.query(`
+            CREATE TABLE notifications (
+            id SERIAL PRIMARY KEY,
+            user_id INT REFERENCES users(id) ON DELETE CASCADE,
+            type VARCHAR(50) NOT NULL,
+            message TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+            );
+        `);
+        console.log('Table notifications created!');
+
         // Create tags table for reusable interest tags
         await pool.query(`
             CREATE TABLE tags (
@@ -93,6 +109,25 @@ const predefinedTags = [
             );
         `);
         console.log('Table user_photos created!');
+        
+        // Create 4 test accounts for debugging
+        console.log('\nCreating test accounts...');
+        const testPassword = await bcrypt.hash('1', 10);
+        
+        const testUsers = [
+            { email: '1@1.1', password: testPassword },
+            { email: '2@2.2', password: testPassword },
+            { email: '3@3.3', password: testPassword },
+            { email: '4@4.4', password: testPassword }
+        ];
+        
+        for (const user of testUsers) {
+            await pool.query(
+                'INSERT INTO users (email, password) VALUES ($1, $2)',
+                [user.email, user.password]
+            );
+            console.log(`Test user created: ${user.email} (password: Test1234!)`);
+        }
         
         console.log('\nDatabase initialization complete!');
         

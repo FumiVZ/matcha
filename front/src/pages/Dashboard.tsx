@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import '../styles/common.css';
+import { NotificationMenu } from '../notifications/NotificationMenu';
+
 
 interface User {
     id: number;
@@ -42,7 +44,10 @@ export default function Dashboard() {
 
     return (
         <div className="dashboard-container">
-            <h1>Dashboard</h1>
+            <header className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h1>Dashboard</h1>
+                <NotificationMenu />
+            </header>
             <div className="profile-card">
                 {data.profilePhoto && (
                     <img 

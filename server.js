@@ -17,6 +17,7 @@ const pool = require('./config/db');
 const logger = require('./events/logger');
 const authRoutes = require('./routes/auth.routes');
 const profileRoutes = require('./routes/profile.routes');
+const notificationRoutes = require('./routes/notification.routes');
 const sessionConfig = require('./config/session');
 const isAuthenticated = require('./middlewares/isAuthenticated');
 const isProfileComplete = require('./middlewares/isProfileComplete');
@@ -41,6 +42,7 @@ app.use(express.json());
 app.use(sessionConfig);
 app.use('/auth', authRoutes);
 app.use('/profile', profileRoutes);
+app.use('/notifications', notificationRoutes);
 
 // Serve uploaded photos with security headers and authorization
 app.get('/uploads/photos/:filename', isAuthenticated, async (req, res) => {
