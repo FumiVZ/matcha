@@ -132,8 +132,6 @@ app.get('/matches', isAuthenticated, (req, res) => {
 });
 
 
-const pool = require('./config/db');
-
 app.get('/dashboard', isProfileComplete, async (req, res) => {
     try {
         // Fetch user profile data including location and popularity score
@@ -207,7 +205,7 @@ app.use((req, res) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}`);
     console.log(`WebSocket server ready on ws://localhost:${PORT}`);
 });

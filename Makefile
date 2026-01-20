@@ -1,15 +1,8 @@
 DOCKER_COMPOSE := $(shell docker compose version > /dev/null 2>&1 && echo "docker compose" || echo "docker-compose")
 
-all: generate-db-password generate-ssl
-	@echo "Starting all services with HTTPS..."
-	$(DOCKER_COMPOSE) up -d
-	@echo "Waiting for database to be ready..."
-	@until docker exec matcha_db pg_isready -U postgres > /dev/null 2>&1; do sleep 1; done
-	@echo "Initializing database..."
-	@docker exec matcha_app node scripts/initDB.js
-	@echo ""
-	@echo "  -> https://localhost:8443"
-	@echo ""
+all: docker-db init-db build-front
+	@echo "Starting production server on http://localhost:3000 ..."
+	node server.js
 
 dev: docker-db init-db
 	@echo "Starting development servers (Back & Front)..."
@@ -103,17 +96,3 @@ install-front:
 	cd front && npm install
 
 .PHONY: all dev init-db clean-db clean re rdev docker-up docker-down docker-build docker-logs docker-db docker-clean docker-restart generate-db-password setup front build-front install-front
-
-generate-ssl:
-	@echo "Generating SSL certificates..."
-	@./ssl/generate-certs.sh
-
-docker-https: generate-db-password generate-ssl
-	@echo "Starting all services with HTTPS..."
-	$(DOCKER_COMPOSE) up -d
-
-docker-https-logs:
-	@echo "Showing nginx logs..."
-	docker logs -f matcha_nginx
-
-.PHONY: all dev init-db clean-db clean re rdev docker-up docker-down docker-build docker-logs docker-db docker-clean docker-restart generate-db-password setup generate-ssl docker-https docker-https-logs

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import './NotificationMenu.css';
-import { useWebSocket } from '../hooks/useWebSocket';
+//import { useWebSocket } from '../hooks/useWebSocket';
 
 interface Notification {
     id: number;
@@ -61,7 +61,7 @@ export function NotificationMenu() {
         };
     }, []);
 
-    const handleDeleteType = async (type: string) => {
+    /*const handleDeleteType = async (type: string) => {
         try {
             const response = await fetch(`/notifications/${type}`, {
                 method: 'DELETE',
@@ -73,7 +73,7 @@ export function NotificationMenu() {
         } catch (error) {
             console.error('Failed to delete notifications:', error);
         }
-    };
+    };*/
     
     // Toggle menu
     const toggleMenu = () => {

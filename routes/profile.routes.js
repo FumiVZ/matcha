@@ -548,6 +548,63 @@ router.put('/update', isAuthenticated, async (req, res) => {
     }
 });
 
+// GET /profile/me - Get current user profile as JSON
+router.get('/me', isAuthenticated, async (req, res) => {
+    try {
+        const userId = req.session.userId;
+
+        // Fetch user data
+        const userResult = await pool.query(
+            'SELECT id, email, gender, sexual_preference, biography FROM users WHERE id = $1',
+            [userId]
+        );
+        const user = userResult.rows[0];
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Fetch user's tags
+        const tagsResult = await pool.query(
+            `SELECT t.name FROM tags t
+             JOIN user_tags ut ON t.id = ut.tag_id
+             WHERE ut.user_id = $1`,
+            [userId]
+        );
+        const tags = tagsResult.rows.map(row => row.name);
+
+        // Fetch profile photo
+        const photoResult = await pool.query(
+            'SELECT file_path FROM user_photos WHERE user_id = $1 AND is_profile_photo = true',
+            [userId]
+        );
+        
+        let profilePhoto = null;
+        if (photoResult.rows.length > 0) {
+             profilePhoto = `/uploads/photos/${photoResult.rows[0].file_path}`;
+        } else {
+             // Fallback to any photo if no profile photo set
+             const anyPhoto = await pool.query(
+                'SELECT file_path FROM user_photos WHERE user_id = $1 LIMIT 1',
+                 [userId]
+             );
+             if (anyPhoto.rows.length > 0) {
+                 profilePhoto = `/uploads/photos/${anyPhoto.rows[0].file_path}`;
+             }
+        }
+
+        res.json({
+            user: user,
+            profilePhoto: profilePhoto,
+            tags: tags
+        });
+
+    } catch (error) {
+        console.error('Error fetching profile:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // Error handling middleware for multer errors
 router.use((error, req, res, next) => {
     if (error instanceof multer.MulterError) {
