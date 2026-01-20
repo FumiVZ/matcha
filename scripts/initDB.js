@@ -27,6 +27,18 @@ const predefinedTags = [
 (async () => {
     try {
         // Drop tables in correct order (respect foreign key constraints)
+        await pool.query('DROP TABLE IF EXISTS matches;');
+        console.log('Table matches dropped!');
+        
+        await pool.query('DROP TABLE IF EXISTS likes;');
+        console.log('Table likes dropped!');
+        
+        await pool.query('DROP TABLE IF EXISTS blocks;');
+        console.log('Table blocks dropped!');
+        
+        await pool.query('DROP TABLE IF EXISTS profile_views;');
+        console.log('Table profile_views dropped!');
+        
         await pool.query('DROP TABLE IF EXISTS user_tags;');
         console.log('Table user_tags dropped!');
         
@@ -46,6 +58,8 @@ const predefinedTags = [
         await pool.query(`
             CREATE TABLE users (
                 id SERIAL PRIMARY KEY,
+                first_name VARCHAR(100),
+                name VARCHAR(100),
                 email VARCHAR(255) UNIQUE NOT NULL,
                 password VARCHAR(255) NOT NULL,
                 gender VARCHAR(20),
@@ -53,7 +67,20 @@ const predefinedTags = [
                 biography TEXT,
                 profile_complete BOOLEAN DEFAULT FALSE,
                 last_logout TIMESTAMP,
-                score INT DEFAULT 1000
+                score INT DEFAULT 1000,
+                email_verified BOOLEAN DEFAULT FALSE,
+                popularity_score INT DEFAULT 1000,
+                verification_token VARCHAR(64),
+                verification_token_expires TIMESTAMP,
+                reset_token VARCHAR(64),
+                reset_token_expires TIMESTAMP,
+                -- Location fields (RGPD compliant - only city level, not precise coords)
+                location_city VARCHAR(100),
+                location_country VARCHAR(100),
+                location_latitude DECIMAL(10, 8),
+                location_longitude DECIMAL(11, 8),
+                location_consent BOOLEAN DEFAULT FALSE,
+                location_manual BOOLEAN DEFAULT FALSE
             );
         `);
         console.log('Table users created with profile fields!');
@@ -128,6 +155,72 @@ const predefinedTags = [
             );
             console.log(`Test user created: ${user.email} (password: Test1234!)`);
         }
+        // Create profile_views table to track who viewed whose profile
+        await pool.query(`
+            CREATE TABLE profile_views (
+                id SERIAL PRIMARY KEY,
+                viewer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                viewed_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                viewed_at TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE(viewer_id, viewed_id)
+            );
+        `);
+        console.log('Table profile_views created!');
+        
+        // Create indexes for profile_views
+        await pool.query('CREATE INDEX idx_profile_views_viewed_id ON profile_views(viewed_id);');
+        await pool.query('CREATE INDEX idx_profile_views_viewed_at ON profile_views(viewed_at DESC);');
+        console.log('Indexes for profile_views created!');
+        
+        // Create likes table to track who liked whom
+        await pool.query(`
+            CREATE TABLE likes (
+                id SERIAL PRIMARY KEY,
+                liker_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                liked_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE(liker_id, liked_id)
+            );
+        `);
+        console.log('Table likes created!');
+        
+        // Create indexes for likes
+        await pool.query('CREATE INDEX idx_likes_liker_id ON likes(liker_id);');
+        await pool.query('CREATE INDEX idx_likes_liked_id ON likes(liked_id);');
+        console.log('Indexes for likes created!');
+        
+        // Create matches table for mutual likes
+        await pool.query(`
+            CREATE TABLE matches (
+                id SERIAL PRIMARY KEY,
+                user1_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                user2_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                matched_at TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE(user1_id, user2_id)
+            );
+        `);
+        console.log('Table matches created!');
+        
+        // Create indexes for matches
+        await pool.query('CREATE INDEX idx_matches_user1_id ON matches(user1_id);');
+        await pool.query('CREATE INDEX idx_matches_user2_id ON matches(user2_id);');
+        console.log('Indexes for matches created!');
+        
+        // Create blocks table to track blocked users
+        await pool.query(`
+            CREATE TABLE blocks (
+                id SERIAL PRIMARY KEY,
+                blocker_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                blocked_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE(blocker_id, blocked_id)
+            );
+        `);
+        console.log('Table blocks created!');
+        
+        // Create index for blocks
+        await pool.query('CREATE INDEX idx_blocks_blocker_id ON blocks(blocker_id);');
+        console.log('Index for blocks created!');
         
         console.log('\nDatabase initialization complete!');
         

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Complete Your Profile - Matcha</title>
+    <title>Edit Profile - Matcha</title>
     <style>
         * {
             box-sizing: border-box;
@@ -17,7 +17,7 @@
             background-color: #f5f5f5;
         }
         
-        .profile-setup {
+        .profile-edit {
             background: white;
             padding: 2rem;
             border-radius: 8px;
@@ -48,6 +48,36 @@
             color: #444;
             font-size: 1.2rem;
             margin-bottom: 1rem;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .form-group {
+            flex: 1;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 0.7rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        .form-group input[type="text"]:focus {
+            outline: none;
+            border-color: #2196F3;
         }
         
         .radio-group, .checkbox-group {
@@ -136,74 +166,14 @@
             opacity: 0.7;
         }
         
-        .photos-section {
-            margin-bottom: 1rem;
-        }
-        
-        .photo-upload-container {
+        .button-row {
             display: flex;
-            flex-wrap: wrap;
             gap: 1rem;
-            margin-top: 1rem;
-        }
-        
-        .photo-input-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .photo-preview {
-            width: 120px;
-            height: 120px;
-            border: 2px dashed #ccc;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            background-color: #fafafa;
-        }
-        
-        .photo-preview img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: cover;
-        }
-        
-        .photo-preview.has-image {
-            border-style: solid;
-            border-color: #4CAF50;
-        }
-        
-        .profile-photo-radio {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-            font-size: 0.85rem;
-        }
-        
-        .file-input {
-            display: none;
-        }
-        
-        .upload-btn {
-            padding: 0.4rem 0.8rem;
-            background-color: #2196F3;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.85rem;
-        }
-        
-        .upload-btn:hover {
-            background-color: #1976D2;
+            margin-top: 1.5rem;
         }
         
         .submit-btn {
-            width: 100%;
+            flex: 1;
             padding: 1rem;
             background-color: #4CAF50;
             color: white;
@@ -211,11 +181,26 @@
             border-radius: 5px;
             font-size: 1.1rem;
             cursor: pointer;
-            margin-top: 1rem;
         }
         
         .submit-btn:hover {
             background-color: #43A047;
+        }
+        
+        .cancel-btn {
+            padding: 1rem 2rem;
+            background-color: #9e9e9e;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+        }
+        
+        .cancel-btn:hover {
+            background-color: #757575;
         }
         
         .info-text {
@@ -228,106 +213,57 @@
             color: #f44336;
         }
         
-        /* Location section styles */
         .location-section {
             margin-bottom: 1rem;
         }
         
-        .location-consent-box {
-            background-color: #e3f2fd;
-            border: 1px solid #2196F3;
+        .location-current {
+            background-color: #e8f5e9;
+            padding: 1rem;
             border-radius: 8px;
-            padding: 1.5rem;
             margin-bottom: 1rem;
-        }
-        
-        .location-consent-box h3 {
-            margin: 0 0 0.75rem 0;
-            color: #1976D2;
-            font-size: 1rem;
-        }
-        
-        .location-consent-box p {
-            margin: 0 0 1rem 0;
-            font-size: 0.9rem;
-            color: #555;
-            line-height: 1.5;
-        }
-        
-        .consent-buttons {
             display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
         }
         
-        .consent-btn {
-            padding: 0.6rem 1.2rem;
+        .location-current-text {
+            color: #2e7d32;
+        }
+        
+        .update-location-btn {
+            padding: 0.5rem 1rem;
+            background-color: #2196F3;
+            color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 0.95rem;
-            transition: background-color 0.2s;
+            font-size: 0.9rem;
         }
         
-        .consent-btn.allow {
-            background-color: #4CAF50;
-            color: white;
+        .update-location-btn:hover {
+            background-color: #1976D2;
         }
         
-        .consent-btn.allow:hover {
-            background-color: #43A047;
-        }
-        
-        .consent-btn.deny {
-            background-color: #9e9e9e;
-            color: white;
-        }
-        
-        .consent-btn.deny:hover {
-            background-color: #757575;
-        }
-        
-        .location-result {
-            padding: 1rem;
-            border-radius: 8px;
-            margin-top: 1rem;
+        .location-form {
             display: none;
         }
         
-        .location-result.success {
-            background-color: #e8f5e9;
-            border: 1px solid #4CAF50;
-            color: #2e7d32;
+        .location-form.visible {
             display: block;
         }
         
-        .location-result.error {
-            background-color: #ffebee;
-            border: 1px solid #f44336;
-            color: #c62828;
-            display: block;
-        }
-        
-        .manual-location {
-            margin-top: 1rem;
-            display: none;
-        }
-        
-        .manual-location.visible {
-            display: block;
-        }
-        
-        .manual-location-row {
+        .location-row {
             display: flex;
             gap: 1rem;
-            margin-top: 0.75rem;
+            margin-bottom: 1rem;
         }
         
-        .manual-location-row .form-group {
+        .location-row .form-group {
             flex: 1;
         }
         
-        .manual-location-row label {
+        .location-row label {
             display: block;
             margin-bottom: 0.4rem;
             font-weight: bold;
@@ -335,8 +271,8 @@
             font-size: 0.9rem;
         }
         
-        .manual-location-row input,
-        .manual-location-row select {
+        .location-row input,
+        .location-row select {
             width: 100%;
             padding: 0.6rem;
             border: 1px solid #ddd;
@@ -344,28 +280,97 @@
             font-size: 0.95rem;
         }
         
-        .manual-location-row input:focus,
-        .manual-location-row select:focus {
+        .location-row input:focus,
+        .location-row select:focus {
             outline: none;
             border-color: #2196F3;
         }
         
-        .manual-location-row input:disabled {
-            background-color: #f5f5f5;
-            cursor: not-allowed;
+        .location-buttons {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .geo-btn {
+            padding: 0.6rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .geo-btn.auto {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .geo-btn.auto:hover {
+            background-color: #43A047;
+        }
+        
+        .geo-btn.manual {
+            background-color: #ff9800;
+            color: white;
+        }
+        
+        .geo-btn.manual:hover {
+            background-color: #f57c00;
+        }
+        
+        .location-status {
+            padding: 0.75rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .location-status.success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            display: block;
+        }
+        
+        .location-status.error {
+            background-color: #ffebee;
+            color: #c62828;
+            display: block;
         }
         
         .rgpd-notice {
             font-size: 0.8rem;
             color: #888;
-            margin-top: 1rem;
             padding: 0.75rem;
             background-color: #f5f5f5;
             border-radius: 5px;
         }
         
-        .rgpd-notice a {
-            color: #2196F3;
+        .success-message {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        @media (max-width: 600px) {
+            .form-row {
+                flex-direction: column;
+            }
+            
+            .button-row {
+                flex-direction: column;
+            }
         }
         
         /* City Autocomplete Styles */
@@ -428,11 +433,29 @@
     </style>
 </head>
 <body>
-    <div class="profile-setup">
-        <h1>Complete Your Profile</h1>
-        <p class="subtitle">Welcome <%= email %>! Tell us about yourself to find your perfect match.</p>
+    <div class="profile-edit">
+        <h1>Edit Profile</h1>
+        <p class="subtitle">Update your profile information</p>
         
-        <form action="/profile/setup" method="POST" enctype="multipart/form-data" id="profileForm">
+        <div id="successMessage" class="success-message">Profile updated successfully!</div>
+        <div id="errorMessage" class="error-message"></div>
+        
+        <form id="editForm">
+            
+            <!-- Name Section -->
+            <div class="form-section">
+                <h2>Your Name</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstName">First Name</label>
+                        <input type="text" id="firstName" name="first_name" value="<%= firstName %>" placeholder="Enter your first name">
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name</label>
+                        <input type="text" id="lastName" name="name" value="<%= name %>" placeholder="Enter your last name">
+                    </div>
+                </div>
+            </div>
             
             <!-- Gender Section -->
             <div class="form-section">
@@ -476,260 +499,267 @@
             <div class="form-section">
                 <h2>About You <span class="required">*</span></h2>
                 <p class="info-text">Write a short bio to let others know who you are.</p>
-                <textarea name="biography" placeholder="Tell us about yourself, your hobbies, what you're looking for..." required></textarea>
+                <textarea name="biography" id="biography" placeholder="Tell us about yourself, your hobbies, what you're looking for..." required><%= biography %></textarea>
             </div>
             
             <!-- Interests/Tags Section -->
             <div class="form-section">
                 <h2>Your Interests <span class="required">*</span></h2>
                 <p class="info-text">Select at least one tag that describes your interests.</p>
-                <div class="tags-container">
+                <div class="tags-container" id="tagsContainer">
                     <%= tagsHtml %>
                 </div>
             </div>
             
-            <!-- Location Section (RGPD Compliant) -->
+            <!-- Location Section -->
             <div class="form-section location-section">
                 <h2>Your Location <span class="required">*</span></h2>
                 
-                <div class="location-consent-box">
-                    <h3>We need your location to find matches near you</h3>
-                    <p>
-                        We only store your city and country to show you relevant matches nearby. 
-                        Your precise location (GPS coordinates) is never shared with other users.
-                        You can update or remove your location at any time in your profile settings.
-                    </p>
-                    <div class="consent-buttons">
-                        <button type="button" class="consent-btn allow" onclick="requestGeolocation()">
-                            Allow automatic location
-                        </button>
-                        <button type="button" class="consent-btn deny" onclick="showManualLocation()">
-                            Enter location manually
-                        </button>
-                    </div>
+                <div class="location-current" id="currentLocation">
+                    <span class="location-current-text">
+                        Current: <strong id="currentLocationText"><%= locationCity %>, <%= locationCountry %></strong>
+                    </span>
+                    <button type="button" class="update-location-btn" onclick="showLocationForm()">Update Location</button>
                 </div>
                 
-                <div class="location-result" id="locationResult"></div>
-                
-                <div class="manual-location" id="manualLocation">
-                    <p class="info-text">Select your country, then enter your city:</p>
-                    <div class="manual-location-row">
+                <div class="location-form" id="locationForm">
+                    <div class="location-buttons">
+                        <button type="button" class="geo-btn auto" onclick="requestGeolocation()">
+                            Detect automatically
+                        </button>
+                        <button type="button" class="geo-btn manual" onclick="showManualInput()">
+                            Enter manually
+                        </button>
+                    </div>
+                    
+                    <div class="location-status" id="locationStatus"></div>
+                    
+                    <div class="location-row" id="manualInputRow" style="display: none;">
                         <div class="form-group">
                             <label for="locationCountryInput">Country</label>
                             <div class="autocomplete-wrapper">
-                                <input type="text" id="locationCountryInput" placeholder="Type your country..." autocomplete="off">
+                                <input type="text" id="locationCountryInput" value="<%= locationCountry %>" placeholder="Type your country..." autocomplete="off">
                                 <div class="autocomplete-results" id="countryAutocomplete"></div>
                             </div>
                         </div>
                         <div class="form-group">
                             <label for="locationCity">City</label>
                             <div class="autocomplete-wrapper">
-                                <input type="text" id="locationCity" name="location_city" placeholder="Select a country first..." autocomplete="off" disabled>
+                                <input type="text" id="locationCity" name="location_city" value="<%= locationCity %>" placeholder="Type your city..." autocomplete="off">
                                 <div class="autocomplete-results" id="cityAutocomplete"></div>
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Hidden fields for coordinates -->
+                    <input type="hidden" id="locationLatitude" name="location_latitude">
+                    <input type="hidden" id="locationLongitude" name="location_longitude">
+                    
+                    <p class="rgpd-notice">
+                        In accordance with GDPR/RGPD, your location data is only used to show you relevant matches. 
+                        You can update or remove it at any time.
+                    </p>
                 </div>
-                
-                <!-- Hidden fields for geolocation data -->
-                <input type="hidden" id="locationLatitude" name="location_latitude">
-                <input type="hidden" id="locationLongitude" name="location_longitude">
-                <input type="hidden" id="locationCountryName" name="location_country">
-                <input type="hidden" id="locationConsent" name="location_consent" value="false">
-                <input type="hidden" id="locationManual" name="location_manual" value="false">
-                
-                <p class="rgpd-notice">
-                    In accordance with GDPR/RGPD, you have the right to access, modify, or delete your location data at any time.
-                    Your data is processed only to provide you with relevant matches and is never sold to third parties.
-                </p>
             </div>
             
-            <!-- Photos Section -->
-            <div class="form-section">
-                <h2>Your Photos <span class="required">*</span></h2>
-                <p class="info-text">Upload at least one photo (up to 5). Select one as your profile picture.</p>
-                
-                <div class="photo-upload-container" id="photoContainer">
-                    <!-- Photo slots will be generated by JavaScript -->
-                </div>
-                
-                <input type="hidden" name="profile_photo_index" id="profilePhotoIndex" value="0">
+            <div class="button-row">
+                <a href="/dashboard" class="cancel-btn">Cancel</a>
+                <button type="submit" class="submit-btn">Save Changes</button>
             </div>
-            
-            <button type="submit" class="submit-btn">Complete Profile</button>
         </form>
     </div>
     
     <script>
-        // Generate 5 photo upload slots
-        const photoContainer = document.getElementById('photoContainer');
-        const profilePhotoIndex = document.getElementById('profilePhotoIndex');
+        // Current user data from server
+        const currentGender = '<%= gender %>';
+        const currentPreference = '<%= sexualPreference %>';
+        const userTagIds = <%= userTagIds %>;
         
-        for (let i = 0; i < 5; i++) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'photo-input-wrapper';
-            wrapper.innerHTML = `
-                <div class="photo-preview" id="preview${i}">
-                    <span style="color: #999;">Photo ${i + 1}</span>
-                </div>
-                <input type="file" name="photos" class="file-input" id="photo${i}" accept="image/jpeg,image/png" onchange="previewImage(this, ${i})">
-                <button type="button" class="upload-btn" onclick="document.getElementById('photo${i}').click()">Choose</button>
-                <label class="profile-photo-radio">
-                    <input type="radio" name="profile_photo_select" value="${i}" ${i === 0 ? 'checked' : ''} onchange="updateProfilePhotoIndex(${i})">
-                    <span>Profile Photo</span>
-                </label>
-            `;
-            photoContainer.appendChild(wrapper);
+        // Pre-select current gender
+        if (currentGender) {
+            const genderRadio = document.querySelector(`input[name="gender"][value="${currentGender}"]`);
+            if (genderRadio) genderRadio.checked = true;
         }
         
-        function previewImage(input, index) {
-            const preview = document.getElementById('preview' + index);
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.innerHTML = `<img src="${e.target.result}" alt="Photo ${index + 1}">`;
-                    preview.classList.add('has-image');
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
+        // Pre-select current sexual preference
+        if (currentPreference) {
+            const prefRadio = document.querySelector(`input[name="sexual_preference"][value="${currentPreference}"]`);
+            if (prefRadio) prefRadio.checked = true;
         }
         
-        function updateProfilePhotoIndex(index) {
-            profilePhotoIndex.value = index;
-        }
-
-        // Form validation
-        document.getElementById('profileForm').addEventListener('submit', function(e) {
-            // Check if at least one photo is uploaded
-            const photoInputs = document.querySelectorAll('input[name="photos"]');
-            let hasPhoto = false;
-            photoInputs.forEach(input => {
-                if (input.files && input.files.length > 0) {
-                    hasPhoto = true;
-                }
+        // Pre-select current tags
+        if (userTagIds && userTagIds.length > 0) {
+            userTagIds.forEach(tagId => {
+                const tagCheckbox = document.querySelector(`input[name="tags"][value="${tagId}"]`);
+                if (tagCheckbox) tagCheckbox.checked = true;
             });
-            
-            if (!hasPhoto) {
-                e.preventDefault();
-                alert('Please upload at least one photo');
-                return;
-            }
-
-            // Check if at least one tag is selected
-            const tagInputs = document.querySelectorAll('input[name="tags"]:checked');
-            if (tagInputs.length === 0) {
-                e.preventDefault();
-                alert('Please select at least one interest tag');
-                return;
-            }
-            
-            // Check if location is provided
-            const locationCity = document.getElementById('locationCity').value;
-            const locationCountryInput = document.getElementById('locationCountryInput').value;
-            const locationConsent = document.getElementById('locationConsent').value;
-            
-            if (!locationCity || !locationCountryInput) {
-                e.preventDefault();
-                alert('Please provide your location (either automatically or manually)');
-                return;
-            }
-        });
+        }
         
-        // Geolocation functions
-        function requestGeolocation() {
-            const resultDiv = document.getElementById('locationResult');
-            resultDiv.className = 'location-result';
-            resultDiv.style.display = 'block';
-            resultDiv.textContent = 'Requesting location...';
+        // Location form functions
+        function showLocationForm() {
+            document.getElementById('locationForm').classList.add('visible');
+            document.getElementById('currentLocation').style.display = 'none';
+        }
+        
+        function showManualInput() {
+            document.getElementById('manualInputRow').style.display = 'flex';
+            document.getElementById('locationStatus').className = 'location-status';
+            document.getElementById('locationStatus').textContent = '';
+        }
+        
+        async function requestGeolocation() {
+            const statusEl = document.getElementById('locationStatus');
+            statusEl.className = 'location-status';
+            statusEl.textContent = 'Detecting your location...';
+            statusEl.style.display = 'block';
+            statusEl.style.backgroundColor = '#fff3e0';
+            statusEl.style.color = '#e65100';
             
             if (!navigator.geolocation) {
-                resultDiv.className = 'location-result error';
-                resultDiv.textContent = 'Geolocation is not supported by your browser. Please enter your location manually.';
-                showManualLocation();
+                statusEl.className = 'location-status error';
+                statusEl.textContent = 'Geolocation is not supported by your browser. Please enter manually.';
+                showManualInput();
                 return;
             }
             
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
+                    const { latitude, longitude } = position.coords;
                     
-                    // Store coordinates
-                    document.getElementById('locationLatitude').value = lat;
-                    document.getElementById('locationLongitude').value = lon;
-                    document.getElementById('locationConsent').value = 'true';
-                    document.getElementById('locationManual').value = 'false';
-                    
-                    // Reverse geocode to get city/country
                     try {
-                        const response = await fetch(`/profile/api/reverse-geocode?lat=${lat}&lon=${lon}`);
+                        // Use reverse geocoding to get city/country
+                        const response = await fetch(`/profile/api/reverse-geocode?lat=${latitude}&lon=${longitude}`);
+                        
+                        if (!response.ok) {
+                            throw new Error('Geocoding failed');
+                        }
+                        
                         const data = await response.json();
                         
-                        if (data.city && data.country) {
-                            // Display suburb + city if suburb is available (precision "jusqu'au quartier")
-                            const displayLocation = data.suburb 
-                                ? `${data.suburb}, ${data.city}` 
-                                : data.city;
-                            
-                            document.getElementById('locationCity').value = displayLocation;
-                            document.getElementById('locationCountryName').value = data.country;
-                            
-                            // Set country in text input
-                            document.getElementById('locationCountryInput').value = data.country;
-                            document.getElementById('locationCity').disabled = false;
-                            
-                            resultDiv.className = 'location-result success';
-                            resultDiv.textContent = `Location detected: ${displayLocation}, ${data.country}`;
-                            
-                            // Hide manual input since we got the location
-                            document.getElementById('manualLocation').classList.remove('visible');
-                        } else {
-                            throw new Error('Could not determine city/country');
-                        }
+                        // Display suburb + city if suburb is available (precision "jusqu'au quartier")
+                        const displayLocation = data.suburb 
+                            ? `${data.suburb}, ${data.city}` 
+                            : (data.city || '');
+                        
+                        // Update form fields
+                        document.getElementById('locationCity').value = displayLocation;
+                        document.getElementById('locationCountryInput').value = data.country || '';
+                        // Store GPS coordinates
+                        document.getElementById('locationLatitude').value = latitude;
+                        document.getElementById('locationLongitude').value = longitude;
+                        
+                        // Show success
+                        statusEl.className = 'location-status success';
+                        statusEl.textContent = `Location detected: ${displayLocation}, ${data.country}`;
+                        
+                        // Show manual input row so user can verify/edit
+                        document.getElementById('manualInputRow').style.display = 'flex';
+                        
                     } catch (error) {
                         console.error('Reverse geocoding error:', error);
-                        resultDiv.className = 'location-result error';
-                        resultDiv.textContent = 'Could not determine your city. Please enter it manually.';
-                        showManualLocation();
+                        statusEl.className = 'location-status error';
+                        statusEl.textContent = 'Could not determine your city. Please enter manually.';
+                        showManualInput();
                     }
                 },
-                async (error) => {
+                (error) => {
                     console.error('Geolocation error:', error);
-                    resultDiv.className = 'location-result error';
+                    statusEl.className = 'location-status error';
                     
-                    let message = 'Could not get your location. ';
                     switch (error.code) {
                         case error.PERMISSION_DENIED:
-                            message += 'You denied the request. Please enter your location manually.';
+                            statusEl.textContent = 'Location access denied. Please enter manually.';
                             break;
                         case error.POSITION_UNAVAILABLE:
-                            message += 'Location information is unavailable. Please enter manually.';
+                            statusEl.textContent = 'Location unavailable. Please enter manually.';
                             break;
                         case error.TIMEOUT:
-                            message += 'The request timed out. Please enter manually.';
+                            statusEl.textContent = 'Location request timed out. Please enter manually.';
                             break;
                         default:
-                            message += 'Please enter your location manually.';
+                            statusEl.textContent = 'Could not get location. Please enter manually.';
                     }
-                    
-                    resultDiv.textContent = message;
-                    showManualLocation();
+                    showManualInput();
                 },
                 {
                     enableHighAccuracy: false,
-                    timeout: 30000,
-                    maximumAge: 300000
+                    timeout: 30000, // 30 seconds for slower connections
+                    maximumAge: 300000 // 5 minutes cache
                 }
             );
         }
         
-        function showManualLocation() {
-            document.getElementById('manualLocation').classList.add('visible');
-            document.getElementById('locationManual').value = 'true';
-            document.getElementById('locationConsent').value = 'false';
-            document.getElementById('locationLatitude').value = '';
-            document.getElementById('locationLongitude').value = '';
-        }
+        // Form submission
+        document.getElementById('editForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Hide previous messages
+            successMessage.style.display = 'none';
+            errorMessage.style.display = 'none';
+            
+            // Check if at least one tag is selected
+            const tagInputs = document.querySelectorAll('input[name="tags"]:checked');
+            if (tagInputs.length === 0) {
+                errorMessage.textContent = 'Please select at least one interest tag';
+                errorMessage.style.display = 'block';
+                return;
+            }
+            
+            // Check location
+            const locationCity = document.getElementById('locationCity').value;
+            const locationCountryInput = document.getElementById('locationCountryInput').value;
+            if (!locationCity || !locationCountryInput) {
+                errorMessage.textContent = 'Please provide your location';
+                errorMessage.style.display = 'block';
+                return;
+            }
+            
+            // Collect form data
+            const formData = new FormData(this);
+            const data = {
+                first_name: formData.get('first_name'),
+                name: formData.get('name'),
+                gender: formData.get('gender'),
+                sexual_preference: formData.get('sexual_preference'),
+                biography: formData.get('biography'),
+                tags: Array.from(tagInputs).map(input => parseInt(input.value)),
+                location_city: locationCity,
+                location_country: locationCountryInput,
+                location_latitude: document.getElementById('locationLatitude').value || null,
+                location_longitude: document.getElementById('locationLongitude').value || null
+            };
+            
+            try {
+                const response = await fetch('/profile/update', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    successMessage.style.display = 'block';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    
+                    // Redirect to dashboard after a short delay
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1500);
+                } else {
+                    const errorText = await response.text();
+                    errorMessage.textContent = errorText || 'Failed to update profile';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                errorMessage.textContent = 'An error occurred. Please try again.';
+                errorMessage.style.display = 'block';
+            }
+        });
         
         // Country and City Autocomplete functionality
         (function() {
@@ -737,8 +767,6 @@
             const countryAutocomplete = document.getElementById('countryAutocomplete');
             const cityInput = document.getElementById('locationCity');
             const cityAutocomplete = document.getElementById('cityAutocomplete');
-            const latitudeInput = document.getElementById('locationLatitude');
-            const longitudeInput = document.getElementById('locationLongitude');
             
             let countryDebounce = null;
             let cityDebounce = null;
@@ -746,8 +774,9 @@
             let selectedCityIndex = -1;
             let countrySuggestions = [];
             let citySuggestions = [];
-            let selectedCountryName = '';
+            let selectedCountryName = countryInput.value || '';
             
+            // ===== COUNTRY AUTOCOMPLETE =====
             function searchCountries(query) {
                 if (countryDebounce) clearTimeout(countryDebounce);
                 
@@ -791,16 +820,7 @@
                     countryInput.value = country.name;
                     selectedCountryName = country.name;
                     hideCountryAutocomplete();
-                    
-                    // Enable city input
-                    cityInput.disabled = false;
-                    cityInput.placeholder = `Type a city in ${country.name}...`;
-                    cityInput.value = '';
                     cityInput.focus();
-                    
-                    // Clear previous city data
-                    latitudeInput.value = '';
-                    longitudeInput.value = '';
                 }
             }
             
@@ -812,12 +832,9 @@
             }
             
             countryInput.addEventListener('input', (e) => {
-                // Reset country selection if user types after selecting
+                // Reset country name if user types after selecting
                 if (selectedCountryName && e.target.value !== selectedCountryName) {
                     selectedCountryName = '';
-                    cityInput.disabled = true;
-                    cityInput.placeholder = 'Select a country first...';
-                    cityInput.value = '';
                 }
                 searchCountries(e.target.value);
             });
@@ -857,6 +874,7 @@
                 }
             });
             
+            // ===== CITY AUTOCOMPLETE =====
             function searchCities(query) {
                 if (cityDebounce) clearTimeout(cityDebounce);
                 
@@ -870,7 +888,8 @@
                 
                 cityDebounce = setTimeout(async () => {
                     try {
-                        const url = `/profile/api/city-autocomplete?q=${encodeURIComponent(query)}&countryName=${encodeURIComponent(selectedCountryName)}`;
+                        const countryNameParam = selectedCountryName || countryInput.value || '';
+                        const url = `/profile/api/city-autocomplete?q=${encodeURIComponent(query)}&countryName=${encodeURIComponent(countryNameParam)}`;
                         const response = await fetch(url);
                         const suggestions = await response.json();
                         
@@ -885,7 +904,7 @@
                         cityAutocomplete.innerHTML = suggestions.map((item, index) => `
                             <div class="autocomplete-item" data-index="${index}">
                                 <span class="city-name">${item.city}</span>
-                                <span class="city-details">${item.postcode || ''}</span>
+                                <span class="city-details">${item.postcode || ''} ${item.country || ''}</span>
                             </div>
                         `).join('');
                         
@@ -900,9 +919,14 @@
                 const city = citySuggestions[index];
                 if (city) {
                     cityInput.value = city.city;
-                    document.getElementById('locationCountryName').value = city.country;
-                    latitudeInput.value = city.latitude || '';
-                    longitudeInput.value = city.longitude || '';
+                    // Also update country if it came from city selection
+                    if (city.country && !selectedCountryName) {
+                        countryInput.value = city.country;
+                        selectedCountryName = city.country;
+                    }
+                    // Store coordinates for distance-based matching
+                    document.getElementById('locationLatitude').value = city.latitude || '';
+                    document.getElementById('locationLongitude').value = city.longitude || '';
                     hideCityAutocomplete();
                 }
             }
