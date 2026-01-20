@@ -6,6 +6,7 @@ import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import ProfileSetup from './pages/ProfileSetup';
 import NotFound from './pages/NotFound';
+import LiveChat from './pages/Chat';
 import './App.css';
 import { ToastContainer } from 'react-toastify';
 import { useWebSocket } from './hooks/useWebSocket';
@@ -31,6 +32,7 @@ function App() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile/setup" element={<ProfileSetup />} />
+          <Route path="/chat" element={<LiveChat />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
