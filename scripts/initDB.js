@@ -27,6 +27,9 @@ const predefinedTags = [
 (async () => {
     try {
         // Drop tables in correct order (respect foreign key constraints)
+        await pool.query('DROP TABLE IF EXISTS messages;');
+        console.log('Table messages dropped!');
+
         await pool.query('DROP TABLE IF EXISTS matches;');
         console.log('Table matches dropped!');
         
@@ -221,7 +224,28 @@ const predefinedTags = [
         // Create index for blocks
         await pool.query('CREATE INDEX idx_blocks_blocker_id ON blocks(blocker_id);');
         console.log('Index for blocks created!');
-        
+
+        // Create messages table
+        await pool.query(`
+            CREATE TABLE messages (
+                id SERIAL PRIMARY KEY,
+                sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                receiver_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                content TEXT NOT NULL,
+                read BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            );
+        `);
+        console.log('Table messages created!');
+
+        // Create indexes for messages to optimize retrieval
+        // This allows fast lookups for "messages sent by X", "messages received by Y"
+        // and sorting by date without scanning the whole table.
+        await pool.query('CREATE INDEX idx_messages_sender_id ON messages(sender_id);');
+        await pool.query('CREATE INDEX idx_messages_receiver_id ON messages(receiver_id);');
+        await pool.query('CREATE INDEX idx_messages_created_at ON messages(created_at);');
+        console.log('Indexes for messages created!');
+
         console.log('\nDatabase initialization complete!');
         
     } catch (err) {
