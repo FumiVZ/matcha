@@ -31,7 +31,7 @@ router.get('/browse', isAuthenticated, async (req, res) => {
 router.get('/api/list', isAuthenticated, async (req, res) => {
     try {
         const currentUserId = req.session.userId;
-        
+
         // Fetch users with completed profiles, excluding current user
         const result = await pool.query(
             `SELECT u.id, u.first_name, u.name, u.gender, u.sexual_preference, u.biography,
@@ -44,7 +44,7 @@ router.get('/api/list', isAuthenticated, async (req, res) => {
              ORDER BY u.id DESC`,
             [currentUserId]
         );
-        
+
         // Fetch tags for each user
         const users = await Promise.all(result.rows.map(async (user) => {
             const tagsResult = await pool.query(
@@ -58,7 +58,7 @@ router.get('/api/list', isAuthenticated, async (req, res) => {
                 tags: tagsResult.rows.map(row => row.name)
             };
         }));
-        
+
         res.json(users);
     } catch (error) {
         console.error('Error fetching users:', error);
@@ -71,27 +71,30 @@ router.get('/profile/:id', isAuthenticated, async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
         const currentUserId = req.session.userId;
-        
+
         // Don't allow viewing your own profile through this route
         if (userId === currentUserId) {
             return res.redirect('/dashboard');
         }
-        
+
         // Fetch user data
         const userResult = await pool.query(
             `SELECT id, first_name, name, gender, sexual_preference, biography,
-                    location_city, location_country, popularity_score
+                    location_city, location_country, popularity_score, is_online, last_online
              FROM users 
              WHERE id = $1 AND profile_complete = true AND email_verified = true`,
             [userId]
         );
-        
+
+
         if (userResult.rows.length === 0) {
             return res.status(404).send('User not found');
         }
-        
+        const isOnline = userResult.rows[0].is_online || false;
+        const lastSeen = userResult.rows[0].last_online ? new Date(userResult.rows[0].last_online).toISOString() : null;
+
         const user = userResult.rows[0];
-        
+
         // Record profile view (upsert - insert or update timestamp)
         await pool.query(
             `INSERT INTO profile_views (viewer_id, viewed_id, viewed_at)
@@ -100,7 +103,7 @@ router.get('/profile/:id', isAuthenticated, async (req, res) => {
              DO UPDATE SET viewed_at = NOW()`,
             [currentUserId, userId]
         );
-        
+
         // Fetch profile photo
         const photoResult = await pool.query(
             `SELECT file_path FROM user_photos 
@@ -109,7 +112,7 @@ router.get('/profile/:id', isAuthenticated, async (req, res) => {
             [userId]
         );
         const profilePhoto = photoResult.rows[0]?.file_path || null;
-        
+
         // Fetch all photos
         const allPhotosResult = await pool.query(
             `SELECT file_path, is_profile_photo FROM user_photos 
@@ -127,17 +130,17 @@ router.get('/profile/:id', isAuthenticated, async (req, res) => {
             [userId]
         );
         const tags = tagsResult.rows.map(row => row.name);
-        
+
         // Read template
         const templatePath = path.join(__dirname, '..', 'pages', 'user-profile.html');
         fs.readFile(templatePath, 'utf8', (err, data) => {
             if (err) {
                 return res.status(500).send('Error loading profile page');
             }
-            
+
             const displayName = [user.first_name, user.name].filter(Boolean).join(' ') || `User #${user.id}`;
             const location = [user.location_city, user.location_country].filter(Boolean).join(', ') || '';
-            
+
             const html = data
                 .replace(/<%= userId %>/g, user.id)
                 .replace(/<%= displayName %>/g, escapeHtml(displayName))
@@ -150,8 +153,10 @@ router.get('/profile/:id', isAuthenticated, async (req, res) => {
                 .replace('<%= popularityScore %>', user.popularity_score || 1000)
                 .replace('<%= profilePhoto %>', profilePhoto ? `/uploads/photos/${escapeHtml(profilePhoto)}` : '')
                 .replace('<%= photos %>', JSON.stringify(photos.map(p => `/uploads/photos/${p.file_path}`)))
-                .replace('<%= tags %>', JSON.stringify(tags.map(tag => escapeHtml(tag))));
-            
+                .replace('<%= tags %>', JSON.stringify(tags.map(tag => escapeHtml(tag))))
+                .replace('<%= isOnline %>', isOnline ? 'true' : 'false')
+                .replace('<%= lastSeen %>', lastSeen ? escapeHtml(lastSeen) : 'null');
+
             res.send(html);
         });
     } catch (error) {
@@ -164,7 +169,7 @@ router.get('/profile/:id', isAuthenticated, async (req, res) => {
 router.get('/api/viewers', isAuthenticated, async (req, res) => {
     try {
         const currentUserId = req.session.userId;
-        
+
         // Fetch users who viewed current user's profile, ordered by most recent
         // Use AT TIME ZONE to ensure proper timezone handling
         const result = await pool.query(
@@ -180,17 +185,36 @@ router.get('/api/viewers', isAuthenticated, async (req, res) => {
              LIMIT 20`,
             [currentUserId]
         );
-        
+
         // Ensure timestamps are properly formatted as ISO strings
         const viewers = result.rows.map(row => ({
             ...row,
             viewed_at: row.viewed_at ? new Date(row.viewed_at).toISOString() : null
         }));
-        
+
         res.json(viewers);
     } catch (error) {
         console.error('Error fetching profile viewers:', error);
         res.status(500).json({ error: 'Error fetching profile viewers' });
+    }
+});
+
+// POST /users/api/heartbeat - Update user's online status
+router.post('/api/heartbeat', isAuthenticated, async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        
+        await pool.query(
+            `UPDATE users 
+             SET is_online = true, last_online = NOW() 
+             WHERE id = $1`,
+            [userId]
+        );
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating heartbeat:', error);
+        res.status(500).json({ error: 'Error updating status' });
     }
 });
 
