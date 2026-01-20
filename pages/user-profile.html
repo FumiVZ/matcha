@@ -198,6 +198,46 @@
             color: #555;
         }
         
+        .last-online {
+            font-style: italic;
+        }
+
+        .last-online::before {
+            content: '🕒';
+            margin-right: 0.3rem;
+        }
+
+        .online-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .online-status.online {
+            color: #27ae60;
+        }
+
+        .online-status.offline {
+            color: #7f8c8d;
+        }
+
+        .online-indicator, .offline-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .online-indicator {
+            background-color: #27ae60;
+            box-shadow: 0 0 6px rgba(39, 174, 96, 0.5);
+        }
+
+        .offline-indicator {
+            background-color: #95a5a6;
+        }
+
         .popularity-score {
             display: inline-flex;
             align-items: center;
@@ -366,6 +406,9 @@
                 <a href="/users/browse" class="back-btn">Back to Browse</a>
             </div>
             
+            <!-- Status en ligne à ajouter sous le nom -->
+            <div class="online-status" id="onlineStatus"></div>
+            
             <!-- Like/Unlike/Block action buttons -->
             <div id="actionSection">
                 <div class="action-buttons" id="actionButtons">
@@ -423,6 +466,8 @@
         const sexualPreference = '<%= sexualPreference %>';
         const tags = <%= tags %>;
         const photos = <%= photos %>;
+        const isOnline = <%= isOnline %>;
+        const lastSeen = '<%= lastSeen %>';
         
         // Display main photo
         const mainPhotoContainer = document.getElementById('mainPhotoContainer');
@@ -460,6 +505,42 @@
             photosGrid.innerHTML = '<span class="no-photos">No photos available</span>';
         }
         
+        // Format time ago in English
+        function formatTimeAgo(timestamp) {
+            if (!timestamp || timestamp === 'null') return 'Unknown';
+            const now = new Date();
+            const past = new Date(timestamp);
+            const diffMs = now - past;
+            const diffMins = Math.floor(diffMs / 60000);
+            if (diffMins < 1) return 'just now';
+            if (diffMins < 60) return `${diffMins} min ago`;
+            const diffHours = Math.floor(diffMins / 60);
+            if (diffHours < 24) return `${diffHours}h ago`;
+            const diffDays = Math.floor(diffHours / 24);
+            if (diffDays < 7) return `${diffDays}d ago`;
+            const diffWeeks = Math.floor(diffDays / 7);
+            if (diffWeeks < 4) return `${diffWeeks}w ago`;
+            const diffMonths = Math.floor(diffDays / 30);
+            return `${diffMonths}mo ago`;
+        }
+
+        // Display online status
+        function updateOnlineStatus() {
+            const statusElement = document.getElementById('onlineStatus');
+            if (!statusElement) return;
+            if (isOnline) {
+                statusElement.innerHTML = '<span class="online-indicator"></span> <span>Online</span>';
+                statusElement.className = 'online-status online';
+            } else {
+                const timeAgo = formatTimeAgo(lastSeen);
+                statusElement.innerHTML = `<span class="offline-indicator"></span> <span>Last seen: ${timeAgo}</span>`;
+                statusElement.className = 'online-status offline';
+            }
+        }
+
+        // Call updateOnlineStatus
+        updateOnlineStatus();
+        
         // Modal functions
         const modal = document.getElementById('photoModal');
         const modalImage = document.getElementById('modalImage');
@@ -488,7 +569,7 @@
         });
         
         // Like/Unlike/Block functionality
-        const userId = <%= userId %>;
+        var profileUserId = <%= userId %>;
         const actionButtons = document.getElementById('actionButtons');
         const actionMessage = document.getElementById('actionMessage');
         
@@ -501,7 +582,7 @@
         // Load initial status
         async function loadLikeStatus() {
             try {
-                const response = await fetch(`/likes/status/${userId}`);
+                const response = await fetch(`/likes/status/${profileUserId}`);
                 if (response.ok) {
                     currentStatus = await response.json();
                     renderActionButtons();
@@ -553,7 +634,7 @@
         
         async function likeUser() {
             try {
-                const response = await fetch(`/likes/${userId}`, { method: 'POST' });
+                const response = await fetch(`/likes/${profileUserId}`, { method: 'POST' });
                 const data = await response.json();
                 
                 if (response.ok) {
@@ -573,7 +654,7 @@
             if (!confirm('Are you sure you want to unlike this user?')) return;
             
             try {
-                const response = await fetch(`/likes/${userId}`, { method: 'DELETE' });
+                const response = await fetch(`/likes/${profileUserId}`, { method: 'DELETE' });
                 const data = await response.json();
                 
                 if (response.ok) {
@@ -593,7 +674,7 @@
             if (!confirm('Are you sure you want to block this user? This will remove any existing likes and matches.')) return;
             
             try {
-                const response = await fetch(`/likes/block/${userId}`, { method: 'POST' });
+                const response = await fetch(`/likes/block/${profileUserId}`, { method: 'POST' });
                 const data = await response.json();
                 
                 if (response.ok) {
@@ -612,7 +693,7 @@
         
         async function unblockUser() {
             try {
-                const response = await fetch(`/likes/block/${userId}`, { method: 'DELETE' });
+                const response = await fetch(`/likes/block/${profileUserId}`, { method: 'DELETE' });
                 const data = await response.json();
                 
                 if (response.ok) {

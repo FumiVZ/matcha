@@ -12,6 +12,7 @@ if (missingVars.length > 0) {
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const pool = require('./config/db');
 const logger = require('./events/logger');
 const authRoutes = require('./routes/auth.routes');
 const profileRoutes = require('./routes/profile.routes');
@@ -37,6 +38,10 @@ const escapeHtml = (str) => {
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(sessionConfig);
+
+// Serve static files for client scripts (heartbeat.js)
+app.use('/scripts/client', express.static(path.join(__dirname, 'scripts', 'client')));
+
 app.use('/auth', authRoutes);
 app.use('/profile', profileRoutes);
 app.use('/users', usersRoutes);
@@ -108,9 +113,6 @@ app.get('/matches', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'pages', 'matches.html'));
 });
 
-
-const pool = require('./config/db');
-
 app.get('/dashboard', isProfileComplete, async (req, res) => {
     try {
         // Fetch user profile data including location and popularity score
@@ -178,6 +180,23 @@ app.get('/dashboard', isProfileComplete, async (req, res) => {
 app.use((req, res) => {
     res.status(404).sendFile(path.join(__dirname, 'pages', '404.html'));
 });
+
+// CRON job to mark users as offline after 3 minutes of inactivity
+setInterval(async () => {
+    try {
+        const result = await pool.query(
+            `UPDATE users 
+             SET is_online = false 
+             WHERE is_online = true 
+               AND last_online < NOW() - INTERVAL '3 minutes'`
+        );
+        if (result.rowCount > 0) {
+            console.log(`Marked ${result.rowCount} user(s) as offline`);
+        }
+    } catch (error) {
+        console.error('Error in offline CRON job:', error);
+    }
+}, 120000); // Run every 2 minutes
 
 // Start the server
 app.listen(PORT, () => {

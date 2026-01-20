@@ -76,7 +76,11 @@ const predefinedTags = [
                 location_latitude DECIMAL(10, 8),
                 location_longitude DECIMAL(11, 8),
                 location_consent BOOLEAN DEFAULT FALSE,
-                location_manual BOOLEAN DEFAULT FALSE
+                location_manual BOOLEAN DEFAULT FALSE,
+                -- Online status fields
+                is_online BOOLEAN DEFAULT FALSE,
+                last_online TIMESTAMP DEFAULT NOW(),
+                bot_behavior VARCHAR(50) DEFAULT NULL
             );
         `);
         console.log('Table users created with profile fields!');
