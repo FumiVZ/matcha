@@ -68,6 +68,7 @@ const predefinedTags = [
                 gender VARCHAR(20),
                 sexual_preference VARCHAR(20),
                 biography TEXT,
+                birthdate DATE,
                 profile_complete BOOLEAN DEFAULT FALSE,
                 last_logout TIMESTAMP,
                 score INT DEFAULT 1000,
@@ -145,16 +146,16 @@ const predefinedTags = [
         const testPassword = await bcrypt.hash('1', 10);
         
         const testUsers = [
-            { email: '1@1.1', password: testPassword },
-            { email: '2@2.2', password: testPassword },
-            { email: '3@3.3', password: testPassword },
-            { email: '4@4.4', password: testPassword }
+            { email: '1@1.1', password: testPassword, gender: 'male', sexual_preference: 'female', biography: 'I like cats', birthdate: '1990-01-01' },
+            { email: '2@2.2', password: testPassword, gender: 'female', sexual_preference: 'male', biography: 'I like dogs', birthdate: '2000-01-01' },
+            { email: '3@3.3', password: testPassword, gender: 'male', sexual_preference: 'male', biography: 'I like birds', birthdate: '1985-05-05' },
+            { email: '4@4.4', password: testPassword, gender: 'female', sexual_preference: 'female', biography: 'I like fish', birthdate: '1995-12-31' }
         ];
         
         for (const user of testUsers) {
             await pool.query(
-                'INSERT INTO users (email, password) VALUES ($1, $2)',
-                [user.email, user.password]
+                'INSERT INTO users (email, password, gender, sexual_preference, biography, birthdate, profile_complete) VALUES ($1, $2, $3, $4, $5, $6, TRUE)',
+                [user.email, user.password, user.gender, user.sexual_preference, user.biography, user.birthdate]
             );
             console.log(`Test user created: ${user.email} (password: Test1234!)`);
         }

@@ -21,6 +21,7 @@ const notificationRoutes = require('./routes/notification.routes');
 const usersRoutes = require('./routes/users.routes');
 const likesRoutes = require('./routes/likes.routes');
 const chatRoutes = require('./routes/chat.routes');
+const searchRoutes = require('./routes/search.routes');
 const sessionConfig = require('./config/session');
 const isAuthenticated = require('./middlewares/isAuthenticated');
 const isProfileComplete = require('./middlewares/isProfileComplete');
@@ -49,6 +50,7 @@ app.use('/notifications', notificationRoutes);
 app.use('/users', usersRoutes);
 app.use('/likes', likesRoutes);
 app.use('/chat', chatRoutes);
+app.use('/search', searchRoutes);
 
 // Serve uploaded photos with security headers and authorization
 app.get('/uploads/photos/:filename', isAuthenticated, async (req, res) => {

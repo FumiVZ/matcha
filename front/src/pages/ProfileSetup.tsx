@@ -183,6 +183,23 @@ export default function ProfileSetup() {
             ))}
           </div>
 
+          <div style={styles.formSection}>
+            <h2>My Birthday</h2>
+            <input 
+              type="date" 
+              name="birthdate" 
+              required 
+              style={{
+                width: '100%',
+                padding: '0.8rem',
+                border: '1px solid #ddd',
+                borderRadius: '5px',
+                fontSize: '1rem',
+                marginBottom: '1rem'
+              }}
+            />
+          </div>
+
           <button type="submit" style={styles.submitButton}>Save Profile</button>
         </form>
       </div>

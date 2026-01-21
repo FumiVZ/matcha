@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/common.css';
 import { NotificationMenu } from '../notifications/NotificationMenu';
 
@@ -18,6 +19,7 @@ interface DashboardData {
 }
 
 export default function Dashboard() {
+    const navigate = useNavigate();
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -72,6 +74,21 @@ export default function Dashboard() {
                         ))}
                     </ul>
                 </div>
+                <button 
+                    onClick={() => navigate('/search')}
+                    style={{
+                        marginTop: '20px',
+                        padding: '10px 20px',
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: 'pointer',
+                        fontSize: '16px'
+                    }}
+                >
+                    Start Matching
+                </button>
             </div>
         </div>
     );
