@@ -13,6 +13,7 @@ interface User {
   score: number;
   profile_photo: string | null;
   tags: string[];
+  distance?: number;
 }
 
 const styles = {
@@ -306,6 +307,7 @@ export default function Search() {
                 <div style={styles.userStats}>
                   <span>⭐ {user.score} points</span>
                   <span>{user.gender === 'male' ? '♂️' : '♀️'} {user.gender}</span>
+                  {user.distance != null && <span>📍 {user.distance} km</span>}
                 </div>
                 <div style={styles.tagContainer}>
                   {user.tags && user.tags.map(tag => (

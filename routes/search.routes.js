@@ -11,15 +11,55 @@ const router = express.Router();
                 location_latitude DECIMAL(10, 8),
                 location_longitude DECIMAL(11, 8),
 */
-const calculateRadius = (coordinates, radius) => {
+const haversineFilter = (fn) => async (coordinates, radius) => {
+    const candidates = await fn(coordinates, radius);
     const { latitude, longitude } = coordinates;
+
+    return candidates.map(user => {
+        if (!user.location_latitude || !user.location_longitude) return null;
+
+        const R = 6371; // Earth's radius in km
+        const dLat = (user.location_latitude - latitude) * (Math.PI / 180);
+        const dLon = (user.location_longitude - longitude) * (Math.PI / 180);
+        
+        const a = 
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(latitude * (Math.PI / 180)) * 
+            Math.cos(user.location_latitude * (Math.PI / 180)) * 
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c; // Distance in km
+
+        return { ...user, distance: Math.round(distance) };
+    })
+    .filter(user => user !== null && user.distance <= radius);
+};
+
+const radiusFilteredList = haversineFilter(async (coordinates, radius) => {
+    const { latitude, longitude } = coordinates;
+    const rad = Number(radius);
     const R = 6371; // Earth's radius in kilometers
+    
+    // Bounding box calculation for SQL optimization
+    const dLat = (rad / R) * (180 / Math.PI);
+    const dLon = (rad / R) * (180 / Math.PI) / Math.cos(latitude * (Math.PI / 180));
+    
+    const minLat = latitude - dLat;
+    const maxLat = latitude + dLat;
+    const minLon = longitude - dLon;
+    const maxLon = longitude + dLon;
+
     const query = `
-        SELECT
+        SELECT id, location_latitude, location_longitude
+        FROM users
+        WHERE location_latitude BETWEEN $1 AND $2
+        AND location_longitude BETWEEN $3 AND $4
+    `; 
 
-        ` // preselect users within a radius to then filter with haversine
-
-}
+    const result = await pool.query(query, [minLat, maxLat, minLon, maxLon]);
+    return result.rows;
+});
 
 router.get('/', isAuthenticated, async (req, res) => {
     try {
@@ -29,7 +69,8 @@ router.get('/', isAuthenticated, async (req, res) => {
             minScore = 0,
             maxScore = 10000,
             gender,
-            tags
+            tags,
+            radius
         } = req.query;
 
         // Ensure parameters are numbers
@@ -37,6 +78,7 @@ router.get('/', isAuthenticated, async (req, res) => {
         const pMaxAge = parseInt(maxAge);
         const pMinScore = parseInt(minScore);
         const pMaxScore = parseInt(maxScore);
+        const pRadius = radius ? parseInt(radius) : null;
 
         let query = `
             SELECT 
@@ -47,6 +89,9 @@ router.get('/', isAuthenticated, async (req, res) => {
                 u.biography, 
                 u.birthdate, 
                 u.score,
+                u.location_city,
+                u.location_latitude,
+                u.location_longitude,
                 EXTRACT(YEAR FROM AGE(u.birthdate)) as age,
                 (
                     SELECT file_path 
@@ -64,6 +109,37 @@ router.get('/', isAuthenticated, async (req, res) => {
 
         const queryParams = [req.session.userId, pMinAge, pMaxAge, pMinScore, pMaxScore];
         let paramCount = 5;
+
+        // Get current user location
+        const locResult = await pool.query(
+            `SELECT location_latitude, location_longitude FROM users WHERE id = $1`,
+            [req.session.userId]
+        );
+        const currentUser = locResult.rows[0];
+        const userLat = currentUser?.location_latitude ? Number(currentUser.location_latitude) : null;
+        const userLon = currentUser?.location_longitude ? Number(currentUser.location_longitude) : null;
+        let distMap = new Map();
+
+        // Filter by Radius
+        if (pRadius) {
+            if (userLat && userLon) {
+                const resultsInRadius = await radiusFilteredList({
+                    latitude: userLat,
+                    longitude: userLon
+                }, pRadius);
+
+                if (resultsInRadius.length === 0) {
+                    return res.json([]); // No users in radius, return empty array immediately
+                }
+                
+                resultsInRadius.forEach(u => distMap.set(u.id, u.distance));
+                const ids = resultsInRadius.map(u => u.id);
+
+                paramCount++;
+                query += ` AND u.id = ANY($${paramCount})`;
+                queryParams.push(ids);
+            }
+        }
 
         // Filter by gender if provided
         if (gender) {
@@ -94,6 +170,24 @@ router.get('/', isAuthenticated, async (req, res) => {
         const users = result.rows;
         
         for (let user of users) {
+            // Add distance
+            if (distMap.has(user.id)) {
+                user.distance = distMap.get(user.id);
+            } else if (userLat && userLon && user.location_latitude && user.location_longitude) {
+                const R = 6371; 
+                const dLat = (user.location_latitude - userLat) * (Math.PI / 180);
+                const dLon = (user.location_longitude - userLon) * (Math.PI / 180);
+                const a = 
+                   Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                   Math.cos(userLat * (Math.PI / 180)) * 
+                   Math.cos(user.location_latitude * (Math.PI / 180)) * 
+                   Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                user.distance = Math.round(R * c);
+            } else {
+                user.distance = null;
+            }
+
             const tagsResult = await pool.query(`
                 SELECT t.name 
                 FROM tags t

@@ -247,6 +247,13 @@ const predefinedTags = [
         await pool.query('CREATE INDEX idx_messages_created_at ON messages(created_at);');
         console.log('Indexes for messages created!');
 
+        // Create indexes for location to optimize radius search
+        // Without these, the radius query would require scanning every user row (Full Table Scan), 
+        // which becomes very slow as the user base grows.
+        await pool.query('CREATE INDEX idx_users_location_lat ON users(location_latitude);');
+        await pool.query('CREATE INDEX idx_users_location_lon ON users(location_longitude);');
+        console.log('Indexes for location created!');
+
         console.log('\nDatabase initialization complete!');
         
     } catch (err) {
