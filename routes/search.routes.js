@@ -83,7 +83,7 @@ router.get('/', isAuthenticated, async (req, res) => {
         let query = `
             SELECT 
                 u.id, 
-                u.email, 
+                u.username, 
                 u.gender, 
                 u.sexual_preference, 
                 u.biography, 

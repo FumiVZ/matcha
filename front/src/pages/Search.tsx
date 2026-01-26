@@ -5,7 +5,7 @@ import 'react-range-slider-input/dist/style.css';
 
 interface User {
   id: number;
-  email: string;
+  username: string;
   gender: string;
   sexual_preference: string;
   biography: string;
@@ -127,6 +127,7 @@ export default function Search() {
   // Search Filters
   const [ageRange, setAgeRange] = useState({ min: 18, max: 100 });
   const [scoreRange, setScoreRange] = useState({ min: 0, max: 1000 });
+  const [distance, setDistance] = useState(100);
   const [selectedGender, setSelectedGender] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
@@ -159,6 +160,10 @@ export default function Search() {
 
         if (selectedGender) {
             queryParams.append('gender', selectedGender);
+        }
+
+        if (distance) {
+            queryParams.append('radius', distance.toString());
         }
 
         selectedTags.forEach(tag => {
@@ -215,6 +220,21 @@ export default function Search() {
               step={10}
               value={[scoreRange.min, scoreRange.max]}
               onInput={(value: [number, number]) => setScoreRange({ min: value[0], max: value[1] })}
+            />
+          </div>
+        </div>
+
+        {/* Distance Slider */}
+        <div style={styles.filterGroup}>
+          <label>Maximum Distance: {distance} km</label>
+          <div style={{ padding: '0 10px' }}>
+            <input 
+              type="range" 
+              min="1" 
+              max="1000" 
+              value={distance} 
+              onChange={(e) => setDistance(parseInt(e.target.value))}
+              style={{ width: '100%', accentColor: '#007bff' }}
             />
           </div>
         </div>
@@ -303,7 +323,7 @@ export default function Search() {
                 style={styles.userImage}
               />
               <div style={styles.userInfo}>
-                <div style={styles.userName}>{user.email} (Age: {user.age})</div>
+                <div style={styles.userName}>{user.username} (Age: {user.age})</div>
                 <div style={styles.userStats}>
                   <span>⭐ {user.score} points</span>
                   <span>{user.gender === 'male' ? '♂️' : '♀️'} {user.gender}</span>
