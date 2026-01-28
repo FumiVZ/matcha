@@ -12,18 +12,24 @@ if (missingVars.length > 0) {
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
 const pool = require('./config/db');
 const logger = require('./events/logger');
 const authRoutes = require('./routes/auth.routes');
 const profileRoutes = require('./routes/profile.routes');
+const notificationRoutes = require('./routes/notification.routes');
 const usersRoutes = require('./routes/users.routes');
 const likesRoutes = require('./routes/likes.routes');
+const chatRoutes = require('./routes/chat.routes');
+const searchRoutes = require('./routes/search.routes');
 const sessionConfig = require('./config/session');
 const isAuthenticated = require('./middlewares/isAuthenticated');
 const isProfileComplete = require('./middlewares/isProfileComplete');
+const { initNotificationService } = require('./services/notification.service');
 
 const app = express();
 const PORT = 3000;
+const server = http.createServer(app);
 
 // HTML escape function to prevent XSS
 const escapeHtml = (str) => {
@@ -44,8 +50,11 @@ app.use('/scripts/client', express.static(path.join(__dirname, 'scripts', 'clien
 
 app.use('/auth', authRoutes);
 app.use('/profile', profileRoutes);
+app.use('/notifications', notificationRoutes);
 app.use('/users', usersRoutes);
 app.use('/likes', likesRoutes);
+app.use('/chat', chatRoutes);
+app.use('/search', searchRoutes);
 
 // Serve uploaded photos with security headers and authorization
 app.get('/uploads/photos/:filename', isAuthenticated, async (req, res) => {
@@ -72,9 +81,8 @@ app.get('/uploads/photos/:filename', isAuthenticated, async (req, res) => {
             return res.status(404).send('Photo not found');
         }
         
-        // Security headers to prevent MIME sniffing and XSS
+        // Security headers to prevent MIME sniffing and XSS (only for images)
         res.set('X-Content-Type-Options', 'nosniff');
-        res.set('Content-Security-Policy', "default-src 'none'");
         res.set('Cache-Control', 'private, max-age=3600');
         
         const filePath = path.join(__dirname, 'uploads', 'photos', filename);
@@ -112,7 +120,6 @@ app.get('/auth', (req, res) => {
 app.get('/matches', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'pages', 'matches.html'));
 });
-
 app.get('/dashboard', isProfileComplete, async (req, res) => {
     try {
         // Fetch user profile data including location and popularity score
@@ -175,6 +182,33 @@ app.get('/dashboard', isProfileComplete, async (req, res) => {
     }
 });
 
+const wss = initNotificationService(server, sessionConfig.store);
+
+// Serve static files from React build (if present)
+app.use(express.static(path.join(__dirname, 'front/dist')));
+
+// Handle React routing - after API routes
+app.get('*', (req, res, next) => {
+    const indexPath = path.join(__dirname, 'front', 'dist', 'index.html');
+    if (!fs.existsSync(indexPath)) return next();
+
+    const apiPrefixes = [
+        '/auth',
+        '/profile',
+        '/notifications',
+        '/users',
+        '/likes',
+        '/chat',
+        '/search',
+        '/uploads',
+        '/scripts'
+    ];
+
+    const isApiRoute = apiPrefixes.some((prefix) => req.path === prefix || req.path.startsWith(`${prefix}/`));
+    if (isApiRoute) return next();
+
+    return res.sendFile(indexPath);
+});
 
 // 404 - page not found
 app.use((req, res) => {
@@ -199,6 +233,7 @@ setInterval(async () => {
 }, 120000); // Run every 2 minutes
 
 // Start the server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}`);
+    console.log(`WebSocket server ready on ws://localhost:${PORT}`);
 });

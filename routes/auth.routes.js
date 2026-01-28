@@ -5,6 +5,27 @@ const pool = require('../config/db');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../config/mailer');
 const router = express.Router();
 
+// GET /auth/session - Check if user is logged in
+router.get('/session', async (req, res) => {
+    if (req.session.userId) {
+        try {
+            const result = await pool.query(
+                'SELECT id, email, username, first_name, last_name, profile_complete FROM users WHERE id = $1',
+                [req.session.userId]
+            );
+            
+            if (result.rows.length > 0) {
+                return res.json({ 
+                    authenticated: true, 
+                    user: result.rows[0] 
+                });
+            }
+        } catch (error) {
+            console.error('Session check error:', error);
+        }
+    }
+    res.json({ authenticated: false });
+});
 // Development flag to skip email verification
 const SKIP_EMAIL_VERIFICATION = process.env.SKIP_EMAIL_VERIFICATION === 'true';
 
@@ -77,9 +98,15 @@ router.post('/register', async (req, res) => {
         res.redirect('/auth/verify-email-sent');
     } catch (error) {
         if (error.code === '23505') { // Unique violation
+            if (req.headers.accept?.includes('application/json')) {
+                return res.status(400).json({ success: false, message: 'Email already registered' });
+            }
             return res.status(400).send('Email already registered');
         }
         console.error('Registration error:', error);
+        if (req.headers.accept?.includes('application/json')) {
+            return res.status(500).json({ success: false, message: 'Error during registration' });
+        }
         res.status(500).send('Error during registration');
     }
 });
@@ -327,14 +354,24 @@ router.post('/logout', async (req, res) => {
         req.session.destroy((err) => {
             if (err) {
                 console.error('Error destroying session:', err);
+                if (req.headers.accept?.includes('application/json')) {
+                    return res.status(500).json({ success: false, message: 'Error during logout' });
+                }
                 return res.status(500).send('Error during logout');
             }
             
             res.clearCookie('connect.sid');
+            
+            if (req.headers.accept?.includes('application/json')) {
+                return res.json({ success: true, redirect: '/' });
+            }
             res.redirect('/');
         });
     } catch (error) {
         console.error('Logout error:', error);
+        if (req.headers.accept?.includes('application/json')) {
+            return res.status(500).json({ success: false, message: 'Error during logout' });
+        }
         res.status(500).send('Error during logout');
     }
 });

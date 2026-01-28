@@ -5,8 +5,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "dev": "node server.js",
-    "clean:db": "node scripts/cleanDb.js"
+    "dev": "concurrently \"npm run dev\" \"npm run dev:front\"",
+    "dev:front": "cd front && npm run dev",
+    "build": "cd front && npm run build",
+    "clean:db": "node scripts/cleanDB.js"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +24,12 @@
     "http": "^0.0.1-security",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.12",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "ws": "^8.18.0",
+    "react-range-slider-input": "^3.3.2"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "vite": "^7.3.1"
   }
 }

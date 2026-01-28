@@ -114,7 +114,7 @@ router.get('/setup', isAuthenticated, async (req, res) => {
 // POST /profile/setup - Submit profile data
 router.post('/setup', isAuthenticated, upload.array('photos', 5), async (req, res) => {
     const { 
-        first_name, name, gender, sexual_preference, biography, tags, profile_photo_index,
+        first_name, name, gender, sexual_preference, biography, birthdate, tags, profile_photo_index,
         location_city, location_country, location_latitude, location_longitude, 
         location_consent, location_manual 
     } = req.body;
@@ -122,7 +122,7 @@ router.post('/setup', isAuthenticated, upload.array('photos', 5), async (req, re
 
     try {
         // Validate required fields
-        if (!gender || !sexual_preference || !biography) {
+        if (!gender || !sexual_preference || !biography || !birthdate) {
             return res.status(400).send('Please fill in all required fields');
         }
         
@@ -157,13 +157,15 @@ router.post('/setup', isAuthenticated, upload.array('photos', 5), async (req, re
         await pool.query(
             `UPDATE users 
              SET first_name = $1, name = $2, gender = $3, sexual_preference = $4, biography = $5, 
-                 location_city = $6, location_country = $7, 
-                 location_latitude = $8, location_longitude = $9,
-                 location_consent = $10, location_manual = $11,
+                 birthdate = $6,
+                 location_city = $7, location_country = $8, 
+                 location_latitude = $9, location_longitude = $10,
+                 location_consent = $11, location_manual = $12,
                  profile_complete = TRUE 
-             WHERE id = $12`,
+             WHERE id = $13`,
             [
                 first_name, name, gender, sexual_preference, biography,
+                birthdate,
                 location_city, location_country,
                 location_latitude || null, location_longitude || null,
                 location_consent === 'true', location_manual === 'true',
@@ -545,6 +547,63 @@ router.put('/update', isAuthenticated, async (req, res) => {
     } catch (error) {
         console.error('Error updating profile:', error);
         res.status(500).send('Error updating profile');
+    }
+});
+
+// GET /profile/me - Get current user profile as JSON
+router.get('/me', isAuthenticated, async (req, res) => {
+    try {
+        const userId = req.session.userId;
+
+        // Fetch user data
+        const userResult = await pool.query(
+            'SELECT id, email, gender, sexual_preference, biography FROM users WHERE id = $1',
+            [userId]
+        );
+        const user = userResult.rows[0];
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Fetch user's tags
+        const tagsResult = await pool.query(
+            `SELECT t.name FROM tags t
+             JOIN user_tags ut ON t.id = ut.tag_id
+             WHERE ut.user_id = $1`,
+            [userId]
+        );
+        const tags = tagsResult.rows.map(row => row.name);
+
+        // Fetch profile photo
+        const photoResult = await pool.query(
+            'SELECT file_path FROM user_photos WHERE user_id = $1 AND is_profile_photo = true',
+            [userId]
+        );
+        
+        let profilePhoto = null;
+        if (photoResult.rows.length > 0) {
+             profilePhoto = `/uploads/photos/${photoResult.rows[0].file_path}`;
+        } else {
+             // Fallback to any photo if no profile photo set
+             const anyPhoto = await pool.query(
+                'SELECT file_path FROM user_photos WHERE user_id = $1 LIMIT 1',
+                 [userId]
+             );
+             if (anyPhoto.rows.length > 0) {
+                 profilePhoto = `/uploads/photos/${anyPhoto.rows[0].file_path}`;
+             }
+        }
+
+        res.json({
+            user: user,
+            profilePhoto: profilePhoto,
+            tags: tags
+        });
+
+    } catch (error) {
+        console.error('Error fetching profile:', error);
+        res.status(500).json({ error: 'Server error' });
     }
 });
 

@@ -1,19 +1,16 @@
 DOCKER_COMPOSE := $(shell docker compose version > /dev/null 2>&1 && echo "docker compose" || echo "docker-compose")
 
-all: generate-db-password generate-ssl
-	@echo "Starting all services with HTTPS..."
-	$(DOCKER_COMPOSE) up -d
-	@echo "Waiting for database to be ready..."
-	@until docker exec matcha_db pg_isready -U postgres > /dev/null 2>&1; do sleep 1; done
-	@echo "Initializing database..."
-	@docker exec matcha_app node scripts/initDB.js
-	@echo ""
-	@echo "  -> https://localhost:8443"
-	@echo ""
+all: docker-db init-db build-front
+	@echo "Starting production server on http://localhost:3000 ..."
+	node server.js
 
 dev: docker-db init-db
-	@echo "Starting development server..."
-	npx nodemon server.js
+	@echo "Starting development servers (Back & Front)..."
+	@echo "Backend: http://localhost:3000"
+	@echo "Frontend: http://localhost:5173"
+	@npx concurrently -n "BACK,FRONT" -c "blue,magenta" \
+		"npx nodemon server.js" \
+		"cd front && npm run dev"
 
 init-db:
 	@echo "Waiting for database to be ready..."
@@ -85,16 +82,17 @@ docker-clean:
 
 docker-restart: docker-down docker-up
 
-generate-ssl:
-	@echo "Generating SSL certificates..."
-	@./ssl/generate-certs.sh
+front:
+	@echo "Starting frontend dev server on http://localhost:5173 ..."
+	cd front && npm run dev
 
-docker-https: generate-db-password generate-ssl
-	@echo "Starting all services with HTTPS..."
-	$(DOCKER_COMPOSE) up -d
+build-front:
+	@echo "Building frontend for production..."
+	cd front && npm run build
+	@echo "Frontend built successfully in front/dist/"
 
-docker-https-logs:
-	@echo "Showing nginx logs..."
-	docker logs -f matcha_nginx
+install-front:
+	@echo "Installing frontend dependencies..."
+	cd front && npm install
 
-.PHONY: all dev init-db clean-db clean re rdev docker-up docker-down docker-build docker-logs docker-db docker-clean docker-restart generate-db-password setup generate-ssl docker-https docker-https-logs
+.PHONY: all dev init-db clean-db clean re rdev docker-up docker-down docker-build docker-logs docker-db docker-clean docker-restart generate-db-password setup front build-front install-front

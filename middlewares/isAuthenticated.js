@@ -5,6 +5,10 @@ const SKIP_EMAIL_VERIFICATION = process.env.SKIP_EMAIL_VERIFICATION === 'true';
 
 module.exports = async function isAuthenticated(req, res, next) {
     if (!req.session.userId) {
+        // Check if request expects JSON response
+        if (req.headers.accept?.includes('application/json') || req.path.startsWith('/notifications')) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
         return res.redirect('/auth'); 
     }
     
