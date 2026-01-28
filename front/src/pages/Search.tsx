@@ -125,18 +125,32 @@ export default function Search() {
   const [availableTags, setAvailableTags] = useState<{id: number, name: string}[]>([]);
 
   // Search Filters
-  const [ageRange, setAgeRange] = useState({ min: 18, max: 100 });
+  const [ageRange, setAgeRange] = useState({ min: 0, max: 30 });
   const [scoreRange, setScoreRange] = useState({ min: 0, max: 1000 });
   const [distance, setDistance] = useState(100);
   const [selectedGender, setSelectedGender] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  
+  // Sorting
+  const [sortBy, setSortBy] = useState<'age' | 'distance' | 'score' | 'commonTags'>('distance');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [myTags, setMyTags] = useState<string[]>([]);
 
-  // Fetch tags on component mount
+  // Fetch tags and current user's profile (for common tags) on component mount
   useEffect(() => {
     fetch('/profile/api/tags')
       .then(res => res.json())
       .then(data => setAvailableTags(data))
       .catch(err => console.error('Error fetching tags:', err));
+
+      fetch('/profile/me')
+        .then(res => res.json())
+        .then(data => {
+            if (data.tags) {
+                setMyTags(data.tags);
+            }
+        })
+        .catch(err => console.error('Error fetching my profile:', err));
   }, []);
 
   const handleTagToggle = (tagName: string) => {
@@ -145,6 +159,45 @@ export default function Search() {
         ? prev.filter(t => t !== tagName)
         : [...prev, tagName]
     );
+  };
+
+  const getCommonTagsCount = (userTags: string[]) => {
+      if (!myTags || !userTags) return 0;
+      return userTags.filter(tag => myTags.includes(tag)).length;
+  };
+
+  // Sort function
+  const sortUsers = (usersToSort: User[]) => {
+      return [...usersToSort].sort((a, b) => {
+          let valA, valB;
+
+          switch (sortBy) {
+              case 'age':
+                  valA = a.age;
+                  valB = b.age;
+                  break;
+              case 'score':
+                  valA = a.score;
+                  valB = b.score;
+                  break;
+              case 'commonTags':
+                  valA = getCommonTagsCount(a.tags);
+                  valB = getCommonTagsCount(b.tags);
+                  break;
+              case 'distance':
+              default:
+                  // Handle null distance
+                  if (a.distance === undefined || a.distance === null) return 1;
+                  if (b.distance === undefined || b.distance === null) return -1;
+                  valA = a.distance;
+                  valB = b.distance;
+                  break;
+          }
+
+          if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+          if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+          return 0;
+      });
   };
 
   const fetchUsers = async () => {
@@ -180,6 +233,9 @@ export default function Search() {
       }
       
       const data = await response.json();
+      // Apply initial sort (by default distance asc from backend, but we enforce local state)
+      // Actually backend sorts by distance by default.
+      // But we will use local state to sort.
       setUsers(data);
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
@@ -192,14 +248,42 @@ export default function Search() {
     fetchUsers();
   }, []);
 
+  // Re-sort when sort criteria or users list changes
+  const sortedUsers = sortUsers(users);
+
   return (
     <div style={styles.container}>
-      <h1>Find Matching Profiles</h1>
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+        <h1>Find Matching Profiles</h1>
+        
+        {/* Sort Controls */}
+        <div style={{display: 'flex', gap: '1rem', alignItems: 'center'}}>
+            <label>Sort by:</label>
+            <select 
+                value={sortBy} 
+                onChange={(e) => setSortBy(e.target.value as any)}
+                style={{padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd'}}
+            >
+                <option value="distance">Location (Distance)</option>
+                <option value="age">Age</option>
+                <option value="score">Popularity Score</option>
+                <option value="commonTags">Common Tags</option>
+            </select>
+            <select 
+                value={sortOrder} 
+                onChange={(e) => setSortOrder(e.target.value as any)}
+                style={{padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd'}}
+            >
+                <option value="asc">Ascending ⬆️</option>
+                <option value="desc">Descending ⬇️</option>
+            </select>
+        </div>
+      </div>
       
       <div style={styles.filtersContainer}>
         {/* Age Slider */}
         <div style={styles.filterGroup}>
-          <label>Age Range: {ageRange.min} - {ageRange.max === 100 ? '100+' : ageRange.max}</label>
+          <label>Age Range: {ageRange.min} - {ageRange.max === 30 ? '30+' : ageRange.max}</label>
           <div style={{ padding: '0 10px' }}>
             <RangeSlider
               min={18}
@@ -315,7 +399,7 @@ export default function Search() {
         <div style={styles.noResults}>No profiles found matching your criteria.</div>
       ) : (
         <div style={styles.resultsGrid}>
-          {users.map(user => (
+          {sortedUsers.map(user => (
             <div key={user.id} style={styles.userCard}>
               <img 
                 src={user.profile_photo ? `/uploads/photos/${user.profile_photo}` : 'https://placehold.co/400x400?text=No+Image'} 
@@ -325,14 +409,27 @@ export default function Search() {
               <div style={styles.userInfo}>
                 <div style={styles.userName}>{user.username} (Age: {user.age})</div>
                 <div style={styles.userStats}>
-                  <span>⭐ {user.score} points</span>
+                  <span>⭐ {user.score}</span>
                   <span>{user.gender === 'male' ? '♂️' : '♀️'} {user.gender}</span>
                   {user.distance != null && <span>📍 {user.distance} km</span>}
                 </div>
                 <div style={styles.tagContainer}>
-                  {user.tags && user.tags.map(tag => (
-                    <span key={tag} style={styles.tag}>#{tag}</span>
-                  ))}
+                    {user.tags && user.tags.map(tag => {
+                        const isCommon = myTags.includes(tag);
+                        return (
+                            <span 
+                                key={tag} 
+                                style={{
+                                    ...styles.tag, 
+                                    backgroundColor: isCommon ? '#d1e7dd' : '#f0f2f5',
+                                    fontWeight: isCommon ? 'bold' : 'normal'
+                                }}
+                                title={isCommon ? 'Common interest' : ''}
+                            >
+                                #{tag}
+                            </span>
+                        );
+                    })}
                 </div>
               </div>
             </div>

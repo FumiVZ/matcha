@@ -98,8 +98,8 @@ function fluctuateCoordinates(lat, lon) {
             const gender = getRandomElement(genders);
             const sexPref = getRandomElement(sexualPreferences);
             
-            // Random birthdate (18 to 60 years old)
-            const age = getRandomInt(18, 60);
+            // Random birthdate (0 to 30 years old)
+            const age = getRandomInt(0, 30);
             const currentYear = new Date().getFullYear();
             const birthYear = currentYear - age;
             const birthMonth = getRandomInt(1, 12);
@@ -110,24 +110,28 @@ function fluctuateCoordinates(lat, lon) {
             const baseLoc = getRandomElement(baseCoordinates);
             const { lat, lon } = fluctuateCoordinates(baseLoc.lat, baseLoc.lon);
 
+            // Random popularity score
+            const popularityScore = getRandomInt(0, 1200);
+
             // Insert User
             const userQuery = `
                 INSERT INTO users (
                     username, first_name, name, email, password, 
                     gender, sexual_preference, biography, birthdate,
                     location_city, location_country, location_latitude, location_longitude,
-                    profile_complete, email_verified
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, TRUE, TRUE)
+                    profile_complete, email_verified, popularity_score
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, TRUE, TRUE, $14)
                 RETURNING id
             `;
             
             const userValues = [
                 username, firstName, lastName, email, hashedPassword,
                 gender, sexPref, biography, birthdate,
-                baseLoc.name, 'Unknown', lat, lon
+                baseLoc.name, 'Unknown', lat, lon, popularityScore
             ];
 
             const userRes = await pool.query(userQuery, userValues);
+
             const userId = userRes.rows[0].id;
 
             // Handle Photo

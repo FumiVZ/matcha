@@ -89,6 +89,21 @@ export default function Dashboard() {
                 >
                     Start Matching
                 </button>
+                <button
+                    onClick={() => navigate('/recommended')}
+                    style={{
+                        marginTop: '20px',
+                        padding: '10px 20px',
+                        backgroundColor: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: 'pointer',
+                        fontSize: '16px'
+                    }}
+                >
+                    View Recommendations
+                </button>
             </div>
         </div>
     );
