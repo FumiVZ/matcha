@@ -88,7 +88,7 @@ router.get('/', isAuthenticated, async (req, res) => {
                 u.sexual_preference, 
                 u.biography, 
                 u.birthdate, 
-                u.score,
+                u.popularity_score as score,
                 u.location_city,
                 u.location_latitude,
                 u.location_longitude,
@@ -196,6 +196,15 @@ router.get('/', isAuthenticated, async (req, res) => {
             `, [user.id]);
             user.tags = tagsResult.rows.map(row => row.name);
         }
+
+        // Sort by distance (ascending)
+        users.sort((a, b) => {
+            // Put users with unknown distance at the end
+            if (a.distance === null && b.distance === null) return 0;
+            if (a.distance === null) return 1;
+            if (b.distance === null) return -1;
+            return a.distance - b.distance;
+        });
 
         res.json(users);
 

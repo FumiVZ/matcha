@@ -26,6 +26,7 @@ const sessionConfig = require('./config/session');
 const isAuthenticated = require('./middlewares/isAuthenticated');
 const isProfileComplete = require('./middlewares/isProfileComplete');
 const { initNotificationService } = require('./services/notification.service');
+const recommendationRoutes = require('./routes/recommendation.routes');
 
 const app = express();
 const PORT = 3000;
@@ -55,6 +56,7 @@ app.use('/users', usersRoutes);
 app.use('/likes', likesRoutes);
 app.use('/chat', chatRoutes);
 app.use('/search', searchRoutes);
+app.use('/recommendations', recommendationRoutes);
 
 // Serve uploaded photos with security headers and authorization
 app.get('/uploads/photos/:filename', isAuthenticated, async (req, res) => {
