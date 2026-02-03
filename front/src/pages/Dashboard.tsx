@@ -104,6 +104,21 @@ export default function Dashboard() {
                 >
                     View Recommendations
                 </button>
+                <button
+                onClick={() => navigate('/chat')}
+                style={{
+                    marginTop: '20px',
+                    padding: '10px 20px',
+                    backgroundColor: '#17a2b8',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    fontSize: '16px'
+                }}
+                >
+                    start chatting
+                </button>
             </div>
         </div>
     );
