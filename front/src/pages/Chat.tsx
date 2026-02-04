@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useWebSocket, type WebSocketMessage } from '../hooks/useWebSocket';
 import '../styles/ChatTemp.css';
 
 interface Message {
@@ -20,17 +21,104 @@ const LiveChat = () => {
     const [messageInput, setMessageInput] = useState('');
     // Placeholder specifically for UI design - in real app this would come from props or context
     const [messages, setMessages] = useState<Message[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
 
-    const users: User[] = [
-        { id: 1, name: 'Alice', avatar: 'https://ui-avatars.com/api/?name=Alice&background=random', status: 'online' },
-        { id: 2, name: 'Bob', avatar: 'https://ui-avatars.com/api/?name=Bob&background=random', status: 'offline' },
-        { id: 3, name: 'Charlie', avatar: 'https://ui-avatars.com/api/?name=Charlie&background=random', status: 'online' },
-    ];
+    const handleWebSocketMessage = useCallback((data: WebSocketMessage) => {
+        if (data.type === 'online_status_result' && data.status) {
+            setUsers(prevUsers => prevUsers.map(u => {
+                const newStatus = data.status![u.id] || 'offline';
+                return u.status !== newStatus ? { ...u, status: newStatus } : u;
+            }));
+        } else if (data.type === 'message' && data.from && data.content) {
+            const senderId = Number(data.from);
+            // If the message is from the currently selected user, add it to messages
+            if (selectedUser?.id === senderId) {
+                const newMessage: Message = {
+                    id: Date.now(),
+                    text: data.content,
+                    timestamp: new Date(),
+                    isSelf: false
+                };
+                setMessages(prev => [...prev, newMessage]);
+            } else {
+                // Should probably show an indicator on the user in the list
+                // For now, we rely on the main notification system
+            }
+        }
+    }, [selectedUser]);
+
+    const { sendMessage } = useWebSocket(handleWebSocketMessage);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const response = await fetch('/chat/getMatched');
+                if (response.ok) {
+                    const data = await response.json();
+                    const mappedUsers: User[] = data.map((u: any) => ({
+                        id: u.matched_user_id,
+                        name: u.first_name || u.username,
+                        avatar: u.profile_photo 
+                            ? `/uploads/photos/${u.profile_photo}` 
+                            : `https://ui-avatars.com/api/?name=${u.first_name || u.username}&background=random`,
+                        status: 'offline' // Default to offline until checked
+                    }));
+                    setUsers(mappedUsers);
+                }
+            } catch (error) {
+                console.error("Error fetching matched users:", error);
+            }
+        };
+
+        fetchUsers();
+    }, []);
+
+    useEffect(() => {
+        if (users.length > 0) {
+            const userIds = users.map(u => u.id);
+            // Small delay to ensure WS is connected if it mounts simultaneously
+            const timeout = setTimeout(() => {
+                 sendMessage({ type: 'check_online_users', userIds });
+            }, 500);
+            return () => clearTimeout(timeout);
+        }
+    }, [users.length, sendMessage]);
+
+    useEffect(() => {
+        const fetchMessages = async () => {
+            if (!selectedUser) return;
+            try {
+                const response = await fetch(`/chat/getMessages/${selectedUser.id}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const mappedMessages: Message[] = data.map((msg: any) => ({
+                        id: new Date(msg.sent_at).getTime(),
+                        text: msg.message,
+                        timestamp: new Date(msg.sent_at),
+                        isSelf: msg.sender_id !== selectedUser.id // If sender isn't the selected user, it must be me (the current user)
+                    }));
+                    setMessages(mappedMessages);
+                }
+            } catch (error) {
+                console.error("Error fetching messages:", error);
+            }
+        };
+
+        fetchMessages();
+    }, [selectedUser]);
 
     const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!messageInput.trim()) return;
+        if (!messageInput.trim() || !selectedUser) return;
         
+        // Send via WebSocket
+        sendMessage({
+            type: 'message',
+            to: selectedUser.id,
+            content: messageInput
+        });
+
+        // Optimistically add to UI
         const newMessage: Message = {
             id: Date.now(),
             text: messageInput,

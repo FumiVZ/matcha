@@ -16,7 +16,7 @@ const initNotificationService = (server, sessionStore) => {
 		registerClient(ws.userId, ws);
 		ws.send(JSON.stringify({ type: 'welcome', userId: ws.userId }));
 
-		ws.on('message', (message) => {
+		ws.on('message', async (message) => {
 			console.log('Received:', message.toString());
 			try {
 				const data = JSON.parse(message.toString());
@@ -35,8 +35,28 @@ const initNotificationService = (server, sessionStore) => {
                         break;
 					case 'message':
 						ws.send(JSON.stringify({ type: 'ack', received: true }));
-                        if (data.to && data.content)
-                            forwardMessageToUser(ws.userId, data.to, data.content);
+                        if (data.to && data.content) {
+                            try {
+                                await pool.query(
+                                    'INSERT INTO messages (sender_id, receiver_id, content) VALUES ($1, $2, $3)',
+                                    [ws.userId, data.to, data.content]
+                                );
+                                forwardMessageToUser(ws.userId, data.to, data.content);
+                            } catch (err) {
+                                console.error('Error saving message to database:', err);
+                                ws.send(JSON.stringify({ type: 'error', message: 'Failed to save message' }));
+                            }
+                        }
+						break;
+					case 'check_online_users':
+						if (Array.isArray(data.userIds)) {
+							const status = {};
+							data.userIds.forEach(id => {
+								const clientSet = clientsByUserId.get(Number(id)); // Ensure ID number type match
+								status[id] = (clientSet && clientSet.size > 0) ? 'online' : 'offline';
+							});
+							ws.send(JSON.stringify({ type: 'online_status_result', status }));
+						}
 						break;
 					default:
 						ws.send(JSON.stringify({ type: 'error', message: 'Unknown type' }));

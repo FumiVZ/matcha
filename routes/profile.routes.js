@@ -114,7 +114,7 @@ router.get('/setup', isAuthenticated, async (req, res) => {
 // POST /profile/setup - Submit profile data
 router.post('/setup', isAuthenticated, upload.array('photos', 5), async (req, res) => {
     const { 
-        first_name, name, gender, sexual_preference, biography, tags, profile_photo_index,
+        first_name, name, gender, sexual_preference, biography, birthdate, tags, profile_photo_index,
         location_city, location_country, location_latitude, location_longitude, 
         location_consent, location_manual 
     } = req.body;
@@ -122,7 +122,7 @@ router.post('/setup', isAuthenticated, upload.array('photos', 5), async (req, re
 
     try {
         // Validate required fields
-        if (!gender || !sexual_preference || !biography) {
+        if (!gender || !sexual_preference || !biography || !birthdate) {
             return res.status(400).send('Please fill in all required fields');
         }
         
@@ -157,13 +157,15 @@ router.post('/setup', isAuthenticated, upload.array('photos', 5), async (req, re
         await pool.query(
             `UPDATE users 
              SET first_name = $1, name = $2, gender = $3, sexual_preference = $4, biography = $5, 
-                 location_city = $6, location_country = $7, 
-                 location_latitude = $8, location_longitude = $9,
-                 location_consent = $10, location_manual = $11,
+                 birthdate = $6,
+                 location_city = $7, location_country = $8, 
+                 location_latitude = $9, location_longitude = $10,
+                 location_consent = $11, location_manual = $12,
                  profile_complete = TRUE 
-             WHERE id = $12`,
+             WHERE id = $13`,
             [
                 first_name, name, gender, sexual_preference, biography,
+                birthdate,
                 location_city, location_country,
                 location_latitude || null, location_longitude || null,
                 location_consent === 'true', location_manual === 'true',

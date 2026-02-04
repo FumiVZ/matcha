@@ -27,6 +27,9 @@ const predefinedTags = [
 (async () => {
     try {
         // Drop tables in correct order (respect foreign key constraints)
+        await pool.query('DROP TABLE IF EXISTS messages;');
+        console.log('Table messages dropped!');
+
         await pool.query('DROP TABLE IF EXISTS matches;');
         console.log('Table matches dropped!');
         
@@ -58,6 +61,7 @@ const predefinedTags = [
         await pool.query(`
             CREATE TABLE users (
                 id SERIAL PRIMARY KEY,
+                username VARCHAR(50) UNIQUE NOT NULL,
                 first_name VARCHAR(100),
                 name VARCHAR(100),
                 email VARCHAR(255) UNIQUE NOT NULL,
@@ -65,6 +69,7 @@ const predefinedTags = [
                 gender VARCHAR(20),
                 sexual_preference VARCHAR(20),
                 biography TEXT,
+                birthdate DATE,
                 profile_complete BOOLEAN DEFAULT FALSE,
                 last_logout TIMESTAMP,
                 score INT DEFAULT 1000,
@@ -146,16 +151,86 @@ const predefinedTags = [
         const testPassword = await bcrypt.hash('1', 10);
         
         const testUsers = [
-            { email: '1@1.1', password: testPassword },
-            { email: '2@2.2', password: testPassword },
-            { email: '3@3.3', password: testPassword },
-            { email: '4@4.4', password: testPassword }
+            { 
+                username: 'catLover90',
+                email: '1@1.1', 
+                password: testPassword, 
+                gender: 'male', 
+                sexual_preference: 'female', 
+                biography: 'I like cats', 
+                birthdate: '1990-01-01',
+                location_city: 'Paris',
+                location_country: 'France',
+                location_latitude: 48.8566,
+                location_longitude: 2.3522
+            },
+            { 
+                username: 'parisien2000',
+                email: 'eee@20fd.fr', 
+                password: testPassword, 
+                gender: 'male', 
+                sexual_preference: 'female', 
+                biography: 'I like cats', 
+                birthdate: '1990-01-01',
+                location_city: 'Paris',
+                location_country: 'France',
+                location_latitude: 48.8566,
+                location_longitude: 2.3522
+            },
+            { 
+                username: 'dogFan2000',
+                email: '2@2.2', 
+                password: testPassword, 
+                gender: 'female', 
+                sexual_preference: 'male', 
+                biography: 'I like dogs', 
+                birthdate: '2000-01-01',
+                location_city: 'London',
+                location_country: 'United Kingdom',
+                location_latitude: 51.5074,
+                location_longitude: -0.1278
+            },
+            { 
+                username: 'birdWatcher85',
+                email: '3@3.3', 
+                password: testPassword, 
+                gender: 'male', 
+                sexual_preference: 'male', 
+                biography: 'I like birds', 
+                birthdate: '1985-05-05',
+                location_city: 'Berlin',
+                location_country: 'Germany',
+                location_latitude: 52.5200,
+                location_longitude: 13.4050
+            },
+            { 
+                username: 'fishLover95',
+                email: '4@4.4', 
+                password: testPassword, 
+                gender: 'female', 
+                sexual_preference: 'female', 
+                biography: 'I like fish', 
+                birthdate: '1995-12-31',
+                location_city: 'Madrid',
+                location_country: 'Spain',
+                location_latitude: 40.4168,
+                location_longitude: -3.7038
+            }
         ];
         
         for (const user of testUsers) {
             await pool.query(
-                'INSERT INTO users (email, password) VALUES ($1, $2)',
-                [user.email, user.password]
+                `INSERT INTO users (
+                    username, email, password, gender, sexual_preference, biography, birthdate, 
+                    profile_complete, email_verified, 
+                    location_city, location_country, location_latitude, location_longitude
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, TRUE, $8, $9, $10, $11)`,
+                [
+                    user.username, user.email, user.password, user.gender, user.sexual_preference, 
+                    user.biography, user.birthdate,
+                    user.location_city, user.location_country, 
+                    user.location_latitude, user.location_longitude
+                ]
             );
             console.log(`Test user created: ${user.email} (password: Test1234!)`);
         }
@@ -225,7 +300,78 @@ const predefinedTags = [
         // Create index for blocks
         await pool.query('CREATE INDEX idx_blocks_blocker_id ON blocks(blocker_id);');
         console.log('Index for blocks created!');
-        
+
+        // Create messages table
+        await pool.query(`
+            CREATE TABLE messages (
+                id SERIAL PRIMARY KEY,
+                sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                receiver_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                content TEXT NOT NULL,
+                read BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            );
+        `);
+        console.log('Table messages created!');
+
+        // Create indexes for messages to optimize retrieval
+        // This allows fast lookups for "messages sent by X", "messages received by Y"
+        // and sorting by date without scanning the whole table.
+        await pool.query('CREATE INDEX idx_messages_sender_id ON messages(sender_id);');
+        await pool.query('CREATE INDEX idx_messages_receiver_id ON messages(receiver_id);');
+        await pool.query('CREATE INDEX idx_messages_created_at ON messages(created_at);');
+        console.log('Indexes for messages created!');
+
+        // Create indexes for location to optimize radius search
+        // Without these, the radius query would require scanning every user row (Full Table Scan), 
+        // which becomes very slow as the user base grows.
+        await pool.query('CREATE INDEX idx_users_location_lat ON users(location_latitude);');
+        await pool.query('CREATE INDEX idx_users_location_lon ON users(location_longitude);');
+        console.log('Indexes for location created!');
+
+        // Seed test messages and match for 1@1.1 and 2@2.2
+        console.log('\nSeeding test conversation...');
+        const user1Res = await pool.query('SELECT id FROM users WHERE email = $1', ['1@1.1']);
+        const user2Res = await pool.query('SELECT id FROM users WHERE email = $1', ['2@2.2']);
+
+        if (user1Res.rows.length > 0 && user2Res.rows.length > 0) {
+            const u1 = user1Res.rows[0].id;
+            const u2 = user2Res.rows[0].id;
+
+            // 1. Create mutual likes
+            await pool.query('INSERT INTO likes (liker_id, liked_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [u1, u2]);
+            await pool.query('INSERT INTO likes (liker_id, liked_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [u2, u1]);
+            console.log('Mutual likes created!');
+
+            // 2. Create match
+            // Ensure smaller ID is first to maintain consistency if the app relies on it, 
+            // though the table constraint is UNIQUE(user1_id, user2_id) so order matters for uniqueness
+            // usually match tables sort ids to avoid (1,2) and (2,1) duplicates.
+            const firstId = Math.min(u1, u2);
+            const secondId = Math.max(u1, u2);
+
+            await pool.query('INSERT INTO matches (user1_id, user2_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [firstId, secondId]);
+            console.log('Match created!');
+
+            // 3. Create messages
+            const messages = [
+                { sender: u1, receiver: u2, content: 'Hey! I saw you like dogs. Are you a dog person?', hours: 24 },
+                { sender: u2, receiver: u1, content: 'Hi! Yes, absolutely. But I see you prefer cats?', hours: 23 },
+                { sender: u1, receiver: u2, content: 'I do, but I can appreciate a good doggo too.', hours: 22 },
+                { sender: u2, receiver: u1, content: 'That is good to hear! Maybe we can meet up sometime?', hours: 2 }
+            ];
+
+            for (const msg of messages) {
+                const timestamp = new Date();
+                timestamp.setHours(timestamp.getHours() - msg.hours);
+                await pool.query(
+                    'INSERT INTO messages (sender_id, receiver_id, content, created_at) VALUES ($1, $2, $3, $4)',
+                    [msg.sender, msg.receiver, msg.content, timestamp]
+                );
+            }
+            console.log(`Created ${messages.length} test messages!`);
+        }
+
         console.log('\nDatabase initialization complete!');
         
     } catch (err) {

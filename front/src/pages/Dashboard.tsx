@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/common.css';
 import { NotificationMenu } from '../notifications/NotificationMenu';
 
@@ -18,6 +19,7 @@ interface DashboardData {
 }
 
 export default function Dashboard() {
+    const navigate = useNavigate();
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -72,6 +74,51 @@ export default function Dashboard() {
                         ))}
                     </ul>
                 </div>
+                <button 
+                    onClick={() => navigate('/search')}
+                    style={{
+                        marginTop: '20px',
+                        padding: '10px 20px',
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: 'pointer',
+                        fontSize: '16px'
+                    }}
+                >
+                    Start Matching
+                </button>
+                <button
+                    onClick={() => navigate('/recommended')}
+                    style={{
+                        marginTop: '20px',
+                        padding: '10px 20px',
+                        backgroundColor: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: 'pointer',
+                        fontSize: '16px'
+                    }}
+                >
+                    View Recommendations
+                </button>
+                <button
+                onClick={() => navigate('/chat')}
+                style={{
+                    marginTop: '20px',
+                    padding: '10px 20px',
+                    backgroundColor: '#17a2b8',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    fontSize: '16px'
+                }}
+                >
+                    start chatting
+                </button>
             </div>
         </div>
     );
