@@ -54,7 +54,7 @@ router.post('/login', async (req, res) => {
 
 // POST /auth/register
 router.post('/register', async (req, res) => {
-    const { email, password } = req.body;
+    const { username, email, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
     
     // Generate verification token
@@ -65,9 +65,9 @@ router.post('/register', async (req, res) => {
         // If skipping email verification, auto-verify the user
         if (SKIP_EMAIL_VERIFICATION) {
             const result = await pool.query(
-                `INSERT INTO users (email, password, email_verified) 
-                 VALUES ($1, $2, TRUE) RETURNING id`,
-                [email, hashedPassword]
+                `INSERT INTO users (username, email, password, email_verified) 
+                 VALUES ($1, $2, $3, TRUE) RETURNING id`,
+                [username, email, hashedPassword]
             );
             
             console.log('[DEV] Email verification skipped for:', email);
@@ -79,9 +79,9 @@ router.post('/register', async (req, res) => {
         }
 
         await pool.query(
-            `INSERT INTO users (email, password, verification_token, verification_token_expires) 
-             VALUES ($1, $2, $3, $4) RETURNING id`,
-            [email, hashedPassword, verificationToken, tokenExpires]
+            `INSERT INTO users (username, email, password, verification_token, verification_token_expires) 
+             VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+            [username, email, hashedPassword, verificationToken, tokenExpires]
         );
 
         // Send verification email
