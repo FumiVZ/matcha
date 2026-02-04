@@ -102,87 +102,87 @@ app.use((req, res, next) => {
     next();
 });
 
-// Routes to HTML pages
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'pages', 'index.html'));
-});
+// Routes to HTML pages (Commented out to serve React app)
+// app.get('/', (req, res) => {
+//     res.sendFile(path.join(__dirname, 'pages', 'index.html'));
+// });
 
-app.get('/about', (req, res) => {
-    res.sendFile(path.join(__dirname, 'pages', 'about.html'));
-});
+// app.get('/about', (req, res) => {
+//     res.sendFile(path.join(__dirname, 'pages', 'about.html'));
+// });
 
-app.get('/contact', (req, res) => {
-    res.sendFile(path.join(__dirname, 'pages', 'contact.html'));
-});
+// app.get('/contact', (req, res) => {
+//     res.sendFile(path.join(__dirname, 'pages', 'contact.html'));
+// });
 
-app.get('/auth', (req, res) => {
-    res.sendFile(path.join(__dirname, 'pages', 'auth.html'));
-});
+// app.get('/auth', (req, res) => {
+//     res.sendFile(path.join(__dirname, 'pages', 'auth.html'));
+// });
 
-app.get('/matches', isAuthenticated, (req, res) => {
-    res.sendFile(path.join(__dirname, 'pages', 'matches.html'));
-});
-app.get('/dashboard', isProfileComplete, async (req, res) => {
-    try {
-        // Fetch user profile data including location and popularity score
-        const userResult = await pool.query(
-            `SELECT id, first_name, name, gender, sexual_preference, biography,
-                    location_city, location_country, popularity_score 
-             FROM users WHERE id = $1`,
-            [req.session.userId]
-        );
-        const user = userResult.rows[0];
+// app.get('/matches', isAuthenticated, (req, res) => {
+//     res.sendFile(path.join(__dirname, 'pages', 'matches.html'));
+// });
+// app.get('/dashboard', isProfileComplete, async (req, res) => {
+//     try {
+//         // Fetch user profile data including location and popularity score
+//         const userResult = await pool.query(
+//             `SELECT id, first_name, name, gender, sexual_preference, biography,
+//                     location_city, location_country, popularity_score 
+//              FROM users WHERE id = $1`,
+//             [req.session.userId]
+//         );
+//         const user = userResult.rows[0];
 
-        if (!user) {
-            return res.status(404).send('User not found');
-        }
+//         if (!user) {
+//             return res.status(404).send('User not found');
+//         }
 
-        // Fetch user's profile photo
-        const photoResult = await pool.query(
-            `SELECT file_path FROM user_photos 
-             WHERE user_id = $1 AND is_profile_photo = true 
-             LIMIT 1`,
-            [req.session.userId]
-        );
-        const profilePhoto = photoResult.rows[0]?.file_path || null;
+//         // Fetch user's profile photo
+//         const photoResult = await pool.query(
+//             `SELECT file_path FROM user_photos 
+//              WHERE user_id = $1 AND is_profile_photo = true 
+//              LIMIT 1`,
+//             [req.session.userId]
+//         );
+//         const profilePhoto = photoResult.rows[0]?.file_path || null;
 
-        // Fetch user's tags
-        const tagsResult = await pool.query(
-            `SELECT t.name FROM tags t 
-             JOIN user_tags ut ON t.id = ut.tag_id 
-             WHERE ut.user_id = $1`,
-            [req.session.userId]
-        );
-        const tags = tagsResult.rows.map(row => row.name);
+//         // Fetch user's tags
+//         const tagsResult = await pool.query(
+//             `SELECT t.name FROM tags t 
+//              JOIN user_tags ut ON t.id = ut.tag_id 
+//              WHERE ut.user_id = $1`,
+//             [req.session.userId]
+//         );
+//         const tags = tagsResult.rows.map(row => row.name);
 
-        const dashboardPath = path.join(__dirname, 'pages', 'dashboard.html');
-        fs.readFile(dashboardPath, 'utf8', (err, data) => {
-            if (err) {
-                return res.status(500).send('Error loading dashboard');
-            }
+//         const dashboardPath = path.join(__dirname, 'pages', 'dashboard.html');
+//         fs.readFile(dashboardPath, 'utf8', (err, data) => {
+//             if (err) {
+//                 return res.status(500).send('Error loading dashboard');
+//             }
             
-            // Escape all user-provided data to prevent XSS
-            const html = data
-                .replace('<%= userId %>', escapeHtml(user.id))
-                .replace('<%= firstName %>', escapeHtml(user.first_name || ''))
-                .replace('<%= name %>', escapeHtml(user.name || ''))
-                .replace('<%= email %>', escapeHtml(user.email))
-                .replace('<%= gender %>', escapeHtml(user.gender || ''))
-                .replace('<%= sexualPreference %>', escapeHtml(user.sexual_preference || ''))
-                .replace('<%= biography %>', escapeHtml(user.biography || ''))
-                .replace('<%= profilePhoto %>', profilePhoto ? `/uploads/photos/${escapeHtml(profilePhoto)}` : '')
-                .replace('<%= tags %>', JSON.stringify(tags.map(tag => escapeHtml(tag))))
-                .replace('<%= locationCity %>', escapeHtml(user.location_city || ''))
-                .replace('<%= locationCountry %>', escapeHtml(user.location_country || ''))
-                .replace('<%= popularityScore %>', user.popularity_score || 1000);
+//             // Escape all user-provided data to prevent XSS
+//             const html = data
+//                 .replace('<%= userId %>', escapeHtml(user.id))
+//                 .replace('<%= firstName %>', escapeHtml(user.first_name || ''))
+//                 .replace('<%= name %>', escapeHtml(user.name || ''))
+//                 .replace('<%= email %>', escapeHtml(user.email))
+//                 .replace('<%= gender %>', escapeHtml(user.gender || ''))
+//                 .replace('<%= sexualPreference %>', escapeHtml(user.sexual_preference || ''))
+//                 .replace('<%= biography %>', escapeHtml(user.biography || ''))
+//                 .replace('<%= profilePhoto %>', profilePhoto ? `/uploads/photos/${escapeHtml(profilePhoto)}` : '')
+//                 .replace('<%= tags %>', JSON.stringify(tags.map(tag => escapeHtml(tag))))
+//                 .replace('<%= locationCity %>', escapeHtml(user.location_city || ''))
+//                 .replace('<%= locationCountry %>', escapeHtml(user.location_country || ''))
+//                 .replace('<%= popularityScore %>', user.popularity_score || 1000);
             
-            res.send(html);
-        });
-    } catch (error) {
-        console.error('Error loading dashboard:', error);
-        res.status(500).send('Server error');
-    }
-});
+//             res.send(html);
+//         });
+//     } catch (error) {
+//         console.error('Error loading dashboard:', error);
+//         res.status(500).send('Server error');
+//     }
+// });
 
 const wss = initNotificationService(server, sessionConfig.store);
 

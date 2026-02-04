@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useWebSocket, type WebSocketMessage } from '../hooks/useWebSocket';
+import { useRedirectIfNotAuthenticated } from '../hooks/useRedirectIfNotAuthenticated';
 import '../styles/ChatTemp.css';
+
 
 interface Message {
   id: number;
@@ -17,13 +20,19 @@ interface User {
 }
 
 const LiveChat = () => {
+    const navigate = useNavigate();
+    const { loading: authLoading } = useRedirectIfNotAuthenticated();
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
     const [messageInput, setMessageInput] = useState('');
     // Placeholder specifically for UI design - in real app this would come from props or context
     const [messages, setMessages] = useState<Message[]>([]);
     const [users, setUsers] = useState<User[]>([]);
 
+    if (authLoading) return null;
+
     const handleWebSocketMessage = useCallback((data: WebSocketMessage) => {
+
         if (data.type === 'online_status_result' && data.status) {
             setUsers(prevUsers => prevUsers.map(u => {
                 const newStatus = data.status![u.id] || 'offline';
@@ -133,8 +142,14 @@ const LiveChat = () => {
     return (
         <div className="chat-layout">
             <div className="chat-sidebar">
-                <div className="sidebar-header">
+                <div className="sidebar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: '1rem' }}>
                    <h3>Conversations</h3>
+                   <button 
+                        onClick={() => navigate('/dashboard')} 
+                        style={{ padding: '5px 10px', cursor: 'pointer', background: 'transparent', border: '1px solid currentColor', borderRadius: '4px' }}
+                   >
+                        Back
+                   </button>
                 </div>
                 <div className="users-list">
                     {users.map(user => (

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import RangeSlider from 'react-range-slider-input';
 import 'react-range-slider-input/dist/style.css';
+import { useRedirectIfNotAuthenticated } from '../hooks/useRedirectIfNotAuthenticated';
+
 
 interface User {
   id: number;
@@ -119,8 +121,10 @@ const styles = {
 };
 
 export default function Recommended() {
+  const { loading: authLoading } = useRedirectIfNotAuthenticated();
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [availableTags, setAvailableTags] = useState<{id: number, name: string}[]>([]);
@@ -136,6 +140,8 @@ export default function Recommended() {
   const [sortBy, setSortBy] = useState<'age' | 'distance' | 'score' | 'commonTags' | 'Recommendation'>('Recommendation');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [myTags, setMyTags] = useState<string[]>([]);
+
+  if (authLoading) return null;
 
   // Fetch tags and current user's profile (for common tags) on component mount
   useEffect(() => {

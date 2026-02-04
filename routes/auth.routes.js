@@ -10,7 +10,7 @@ router.get('/session', async (req, res) => {
     if (req.session.userId) {
         try {
             const result = await pool.query(
-                'SELECT id, email, username, first_name, last_name, profile_complete FROM users WHERE id = $1',
+                'SELECT id, email, username, first_name, name, profile_complete FROM users WHERE id = $1',
                 [req.session.userId]
             );
             

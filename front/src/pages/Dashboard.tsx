@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/common.css';
 import { NotificationMenu } from '../notifications/NotificationMenu';
+import { useRedirectIfNotAuthenticated } from '../hooks/useRedirectIfNotAuthenticated';
 
 
 interface User {
@@ -20,13 +21,21 @@ interface DashboardData {
 
 export default function Dashboard() {
     const navigate = useNavigate();
+    const { loading: authLoading } = useRedirectIfNotAuthenticated();
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    if (authLoading) return null;
+
     useEffect(() => {
         fetch('/profile/me')
             .then(res => {
+                if (res.status === 401 || res.status === 403) {
+                    localStorage.removeItem('isAuthenticated');
+                    navigate('/auth');
+                    throw new Error('Unauthorized');
+                }
                 if (!res.ok) throw new Error('Failed to load profile');
                 return res.json();
             })

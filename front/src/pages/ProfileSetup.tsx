@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useRedirectIfNotAuthenticated } from '../hooks/useRedirectIfNotAuthenticated';
+
 
 const styles = {
   container: {
@@ -74,8 +76,11 @@ interface Tag {
 }
 
 export default function ProfileSetup() {
+  const { loading: authLoading } = useRedirectIfNotAuthenticated();
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTags, setSelectedTags] = useState<Set<number>>(new Set());
+
+  if (authLoading) return null;
 
   useEffect(() => {
     fetch('/profile/api/tags')

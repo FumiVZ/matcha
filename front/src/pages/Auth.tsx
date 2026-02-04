@@ -1,11 +1,45 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/common.css';
+import { useRedirectIfAuthenticated } from '../hooks/useRedirectIfAuthenticated';
 
 export default function Auth() {
+  const { loading } = useRedirectIfAuthenticated();
   const [isLogin, setIsLogin] = useState(true);
+  const navigate = useNavigate();
+
+  if (loading) return null;
 
   const toggleForms = () => {
     setIsLogin(!isLogin);
+  };
+
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+      const response = await fetch('/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (response.redirected && response.url.includes('/dashboard')) {
+        localStorage.setItem('isAuthenticated', 'true');
+        navigate('/dashboard');
+      } else {
+        const text = await response.text();
+        alert(text);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('An error occurred');
+    }
   };
 
   return (
@@ -13,7 +47,7 @@ export default function Auth() {
       <h1 style={{ textAlign: 'center', marginBottom: '1rem' }}>Matcha - Auth</h1>
 
       {isLogin ? (
-        <form action="/auth/login" method="POST" className="form-container">
+        <form onSubmit={handleLogin} className="form-container">
           <h2>Connexion</h2>
           <input type="email" name="email" placeholder="Email" required className="form-input" />
           <input type="password" name="password" placeholder="Mot de passe" required className="form-input" />

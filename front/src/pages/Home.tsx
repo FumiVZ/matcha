@@ -1,8 +1,13 @@
 import { Link } from 'react-router-dom';
 import '../styles/common.css';
 import {notify} from '../notifications/notifications';
+import { useRedirectIfAuthenticated } from '../hooks/useRedirectIfAuthenticated';
 
 export default function Home() {
+  const { loading } = useRedirectIfAuthenticated();
+
+  if (loading) return null; // Or a loading spinner
+
   return (
     <div className="page-container">
       <header className="page-header">
