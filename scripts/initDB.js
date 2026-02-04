@@ -61,7 +61,7 @@ const predefinedTags = [
         await pool.query(`
             CREATE TABLE users (
                 id SERIAL PRIMARY KEY,
-                username VARCHAR(50) UNIQUE NOT NULL,
+                username VARCHAR(50) UNIQUE,
                 first_name VARCHAR(100),
                 name VARCHAR(100),
                 email VARCHAR(255) UNIQUE NOT NULL,
