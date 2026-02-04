@@ -1,19 +1,30 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { notify } from '../notifications/notifications';
 
-type WebSocketMessage = {
-    type: 'welcome' | 'ping' | 'pong' | 'ack' | 'error' | 'message' | 'notification';
+export type WebSocketMessage = {
+    type: 'welcome' | 'ping' | 'pong' | 'ack' | 'error' | 'message' | 'notification' | 'check_online_users' | 'online_status_result';
     userId?: string;
     received?: boolean;
     message?: string;
     from?: string;
     content?: string;
     timestamp?: number;
+    userIds?: number[];
+    status?: { [key: number]: 'online' | 'offline' };
+    to?: string;
 };
 
-export function useWebSocket() {
+export function useWebSocket(onMessage?: (data: WebSocketMessage) => void) {
     const ws = useRef<WebSocket | null>(null);
     const pingInterval = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const sendMessage = useCallback((data: any) => {
+        if (ws.current?.readyState === WebSocket.OPEN) {
+            ws.current.send(JSON.stringify(data));
+        } else {
+            console.warn('WebSocket is not connected');
+        }
+    }, []);
 
     useEffect(() => {
         // Connect to WebSocket server
@@ -42,6 +53,10 @@ export function useWebSocket() {
             try {
                 const data: WebSocketMessage = JSON.parse(event.data);
                 
+                if (onMessage) {
+                    onMessage(data);
+                }
+
                 switch (data.type) {
                     case 'welcome':
                         console.log(`WebSocket: Connected as user ${data.userId}`);
@@ -88,44 +103,7 @@ export function useWebSocket() {
                 clearInterval(pingInterval.current);
             }
         };
-    }, []);
+    }, [onMessage]);
 
-    const sendMessage = (to: string, content: string) => {
-        if (ws.current?.readyState === WebSocket.OPEN) {
-            ws.current.send(JSON.stringify({
-                type: 'message',
-                to,
-                content
-            }));
-        } else {
-            console.warn('WebSocket is not connected');
-            notify('Connection lost. Please refresh.', 'error');
-        }
-    };
-
-    const sendTestNotification = () => {
-        if (ws.current?.readyState === WebSocket.OPEN) {
-            ws.current.send(JSON.stringify({
-                type: 'test_notification'
-            }));
-        }
-    };
-
-    // Expose this for testing purposes, e.g. attach to window or return from hook
-    // For now, let's just trigger it once on mount after a short delay for demonstration if needed,
-    // or better, return it so a component can use it.
-    // To strictly follow "send some test notifications from the server", 
-    // I will trigger it automatically once connected for this demo.
-    
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (ws.current?.readyState === WebSocket.OPEN) {
-                console.log('Requesting test notification...');
-                sendTestNotification();
-            }
-        }, 2000);
-        return () => clearTimeout(timer);
-    }, []);
-
-    return { sendMessage, sendTestNotification };
+    return { sendMessage };
 }
